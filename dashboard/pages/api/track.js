@@ -53,21 +53,55 @@ const enrichTrackingData = (data, req) => {
         const clientIP = getClientIP(req);
         const serverBotInfo = detectServerSideBot(req, data.user_agent);
         
-        // Enrich the data
+        // Enrich the data with all required schema fields
         const enrichedData = {
-            ...data,
+            // Core tracking data
+            timestamp: data.timestamp,
+            action: data.action || 'page_hit',
+            version: data.version || '1',
+            session_id: data.session_id,
+            client_id: data.client_id || 0,
+            visitor_id: data.visitor_id || 0,
+            site_id: data.site_id || '',
+            hostname: data.hostname || '',
+            path: data.path || '',
+            title: data.title || '',
+            language: data.language || 'en',
+            country_code: (data.country_code || '').slice(0, 2), // Ensure max 2 chars for FixedString(2)
+            region: data.region || '',
+            city: data.city || '',
+            referrer: data.referrer || '',
+            referrer_name: data.referrer_name || '',
+            referrer_icon: data.referrer_icon || '',
+            os: data.os || '',
+            os_version: data.os_version || '',
+            browser: data.browser || '',
+            browser_version: data.browser_version || '',
+            desktop: data.desktop || 0,
+            mobile: data.mobile || 0,
+            screen_class: data.screen_class || '',
+            utm_source: data.utm_source || '',
+            utm_medium: data.utm_medium || '',
+            utm_campaign: data.utm_campaign || '',
+            utm_content: data.utm_content || '',
+            utm_term: data.utm_term || '',
+            channel: data.channel || 'Direct',
+            duration_seconds: data.duration_seconds || 0,
+            
+            // Event fields (with defaults for non-event tracking)
+            event_name: data.event_name || '',
+            event_meta_keys: data.event_meta_keys || [],
+            event_meta_values: data.event_meta_values || [],
+            tag_keys: data.tag_keys || [],
+            tag_values: data.tag_values || [],
+            
+            // Technical fields
+            user_agent: data.user_agent || '',
             ip: clientIP,
-            // Override bot detection if server-side detection is more confident
             bot: serverBotInfo.bot || data.bot || 0,
             bot_reason: serverBotInfo.bot_reason || data.bot_reason || '',
-            // Add server timestamp for comparison
-            server_timestamp: new Date().toISOString(),
-            // Add request headers for advanced analysis (optional)
-            request_headers: {
-                'user-agent': req.headers['user-agent'] || '',
-                'accept-language': req.headers['accept-language'] || '',
-                'accept': req.headers['accept'] || ''
-            }
+            payload: data.payload || '',
+            server_timestamp: new Date().toISOString()
         };
         
         return enrichedData;
