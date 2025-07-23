@@ -39,25 +39,25 @@ export type KpiOption = {
 
 export const KPI_OPTIONS: KpiOption[] = [
   {
-    label: 'unique visitors',
+    label: 'Unique Visitors',
     value: 'visits',
     tooltip: 'visits',
     formatter: formatNumber,
   },
   {
-    label: 'site pageviews',
+    label: 'Page Views',
     value: 'pageviews',
     tooltip: 'pageviews',
     formatter: kFormatter,
   },
   {
-    label: 'avg. visit time',
+    label: 'Session Duration',
     value: 'avg_session_sec',
     tooltip: 'avg. visit time',
     formatter: formatMinSec,
   },
   {
-    label: 'bounce rate',
+    label: 'Bounce Rate',
     value: 'bounce_rate',
     tooltip: 'bounce rate',
     formatter: formatPercentage,

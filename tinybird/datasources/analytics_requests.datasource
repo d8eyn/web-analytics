@@ -1,0 +1,23 @@
+DESCRIPTION >
+    Requests data source - raw request tracking and bot detection
+
+SCHEMA >
+    `client_id` UInt64,
+    `visitor_id` UInt64,
+    `timestamp` DateTime,
+    `ip` String,
+    `user_agent` String,
+    `hostname` String,
+    `path` String,
+    `event_name` String,
+    `referrer` String,
+    `utm_source` String,
+    `utm_medium` String,
+    `utm_campaign` String,
+    `bot` Bool,
+    `bot_reason` String
+
+ENGINE MergeTree
+ENGINE_PARTITION_KEY toYYYYMM(timestamp)
+ENGINE_SORTING_KEY timestamp, client_id, visitor_id
+ENGINE_TTL timestamp + toIntervalMonth(1) 

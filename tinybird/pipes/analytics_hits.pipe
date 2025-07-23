@@ -1,11 +1,11 @@
 DESCRIPTION >
-    Parsed `page_hit` events, implementing `browser` and `device` detection logic.
+    Comprehensive analytics hits processing with rich tracking data, device detection, and geographic data
 
 TOKEN "dashboard" READ
 
 NODE parsed_hits
 DESCRIPTION >
-    Parse raw page_hit events
+    Parse and process page hit events with comprehensive tracking data
 
 SQL >
     SELECT
@@ -13,50 +13,197 @@ SQL >
         action,
         version,
         coalesce(session_id, '0') as session_id,
-        JSONExtractString(payload, 'locale') as locale,
-        JSONExtractString(payload, 'location') as location,
-        JSONExtractString(payload, 'referrer') as referrer,
-        JSONExtractString(payload, 'pathname') as pathname,
+        coalesce(client_id, 0) as client_id,
+        coalesce(visitor_id, 0) as visitor_id,
+        coalesce(hostname, JSONExtractString(payload, 'hostname')) as hostname,
+        coalesce(path, JSONExtractString(payload, 'pathname')) as path,
+        coalesce(title, JSONExtractString(payload, 'title')) as title,
+        coalesce(language, JSONExtractString(payload, 'locale')) as language,
+        coalesce(country_code, JSONExtractString(payload, 'location')) as country_code,
+        coalesce(region, JSONExtractString(payload, 'region')) as region,
+        coalesce(city, JSONExtractString(payload, 'city')) as city,
+        coalesce(referrer, JSONExtractString(payload, 'referrer')) as referrer,
+        coalesce(referrer_name, '') as referrer_name,
+        coalesce(referrer_icon, '') as referrer_icon,
+        coalesce(os, '') as os,
+        coalesce(os_version, '') as os_version,
+        coalesce(browser, '') as browser,
+        coalesce(browser_version, '') as browser_version,
+        coalesce(desktop, 0) as desktop,
+        coalesce(mobile, 0) as mobile,
+        coalesce(screen_class, '') as screen_class,
+        coalesce(utm_source, JSONExtractString(payload, 'utm_source')) as utm_source,
+        coalesce(utm_medium, JSONExtractString(payload, 'utm_medium')) as utm_medium,
+        coalesce(utm_campaign, JSONExtractString(payload, 'utm_campaign')) as utm_campaign,
+        coalesce(utm_content, JSONExtractString(payload, 'utm_content')) as utm_content,
+        coalesce(utm_term, JSONExtractString(payload, 'utm_term')) as utm_term,
+        coalesce(channel, '') as channel,
+        coalesce(duration_seconds, 0) as duration_seconds,
+        coalesce(event_name, '') as event_name,
+        coalesce(event_meta_keys, []) as event_meta_keys,
+        coalesce(event_meta_values, []) as event_meta_values,
+        coalesce(tag_keys, []) as tag_keys,
+        coalesce(tag_values, []) as tag_values,
+        coalesce(user_agent, JSONExtractString(payload, 'user-agent')) as user_agent,
+        coalesce(ip, '') as ip,
+        coalesce(bot, 0) as bot,
+        coalesce(bot_reason, '') as bot_reason,
         JSONExtractString(payload, 'href') as href,
-        domainWithoutWWW(href) as current_domain,
-        lower(JSONExtractString(payload, 'user-agent')) as user_agent
-    FROM analytics_events
-    where action = 'page_hit'
+        domainWithoutWWW(JSONExtractString(payload, 'href')) as current_domain
+    FROM analytics_events_new
+    WHERE action = 'page_hit'
 
-NODE endpoint
+NODE enriched_hits
+DESCRIPTION >
+    Enrich hits with device detection, browser detection, and traffic classification
+
 SQL >
     SELECT
         timestamp,
         action,
         version,
         session_id,
-        location,
+        client_id,
+        visitor_id,
+        hostname,
+        path,
+        title,
+        language,
+        country_code,
+        region,
+        city,
         referrer,
-        pathname,
+        referrer_name,
+        referrer_icon,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        utm_content,
+        utm_term,
+        duration_seconds,
+        event_name,
+        event_meta_keys,
+        event_meta_values,
+        tag_keys,
+        tag_values,
+        ip,
+        bot,
+        bot_reason,
         href,
         current_domain,
-        case
-            when match(user_agent, 'wget|ahrefsbot|curl|urllib|bitdiscovery|\+https://|googlebot')
-            then 'bot'
-            when match(user_agent, 'android')
-            then 'mobile-android'
-            when match(user_agent, 'ipad|iphone|ipod')
-            then 'mobile-ios'
-            else 'desktop'
+        lower(user_agent) as user_agent_lower,
+        -- Enhanced device detection
+        CASE
+            WHEN match(lower(user_agent), 'wget|ahrefsbot|curl|urllib|bitdiscovery|\+https://|googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegram')
+            THEN 'bot'
+            WHEN match(lower(user_agent), 'android') AND match(lower(user_agent), 'mobile')
+            THEN 'mobile-android'
+            WHEN match(lower(user_agent), 'iphone|ipod') 
+            THEN 'mobile-ios'
+            WHEN match(lower(user_agent), 'ipad')
+            THEN 'tablet-ios'
+            WHEN match(lower(user_agent), 'android') AND NOT match(lower(user_agent), 'mobile')
+            THEN 'tablet-android'
+            WHEN match(lower(user_agent), 'tablet')
+            THEN 'tablet'
+            ELSE 'desktop'
         END as device,
-        case
-            when match(user_agent, 'firefox')
-            then 'firefox'
-            when match(user_agent, 'chrome|crios')
-            then 'chrome'
-            when match(user_agent, 'opera')
-            then 'opera'
-            when match(user_agent, 'msie|trident')
-            then 'ie'
-            when match(user_agent, 'iphone|ipad|safari')
-            then 'safari'
-            else 'Unknown'
-        END as browser
+        -- Enhanced browser detection
+        CASE
+            WHEN match(lower(user_agent), 'edg/')
+            THEN 'edge'
+            WHEN match(lower(user_agent), 'firefox|fxios')
+            THEN 'firefox'
+            WHEN match(lower(user_agent), 'chrome|crios') AND NOT match(lower(user_agent), 'edg/')
+            THEN 'chrome'
+            WHEN match(lower(user_agent), 'opera|opr/')
+            THEN 'opera'
+            WHEN match(lower(user_agent), 'safari') AND NOT match(lower(user_agent), 'chrome|crios')
+            THEN 'safari'
+            WHEN match(lower(user_agent), 'msie|trident')
+            THEN 'ie'
+            ELSE 'Unknown'
+        END as browser_detected,
+        -- Enhanced OS detection
+        CASE
+            WHEN match(lower(user_agent), 'windows nt 10')
+            THEN 'Windows 10'
+            WHEN match(lower(user_agent), 'windows nt 6.3')
+            THEN 'Windows 8.1'
+            WHEN match(lower(user_agent), 'windows nt 6.2')
+            THEN 'Windows 8'
+            WHEN match(lower(user_agent), 'windows nt 6.1')
+            THEN 'Windows 7'
+            WHEN match(lower(user_agent), 'windows')
+            THEN 'Windows'
+            WHEN match(lower(user_agent), 'mac os x')
+            THEN 'macOS'
+            WHEN match(lower(user_agent), 'android')
+            THEN 'Android'
+            WHEN match(lower(user_agent), 'iphone|ipad|ipod')
+            THEN 'iOS'
+            WHEN match(lower(user_agent), 'linux')
+            THEN 'Linux'
+            ELSE 'Unknown'
+        END as os_detected,
+        -- Traffic source classification
+        CASE
+            WHEN referrer = '' OR referrer IS NULL
+            THEN 'Direct'
+            WHEN utm_source != '' AND utm_source IS NOT NULL
+            THEN 'Campaign'
+            WHEN match(lower(referrer), 'google|bing|yahoo|duckduckgo|yandex|baidu')
+            THEN 'Search'
+            WHEN match(lower(referrer), 'facebook|twitter|linkedin|instagram|youtube|tiktok|snapchat|pinterest|reddit')
+            THEN 'Social'
+            WHEN match(lower(referrer), 'gmail|outlook|mail')
+            THEN 'Email'
+            ELSE 'Referral'
+        END as traffic_source
     FROM parsed_hits
+
+NODE endpoint
+DESCRIPTION >
+    Final processed analytics hits with all enrichments
+
+SQL >
+    SELECT
+        timestamp,
+        action,
+        version,
+        session_id,
+        client_id,
+        visitor_id,
+        hostname,
+        path,
+        title,
+        language,
+        country_code,
+        region,
+        city,
+        referrer,
+        referrer_name,
+        referrer_icon,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        utm_content,
+        utm_term,
+        duration_seconds,
+        event_name,
+        event_meta_keys,
+        event_meta_values,
+        tag_keys,
+        tag_values,
+        ip,
+        bot,
+        bot_reason,
+        href,
+        current_domain,
+        device,
+        browser_detected as browser,
+        os_detected as os,
+        traffic_source as channel
+    FROM enriched_hits
 
 TYPE endpoint

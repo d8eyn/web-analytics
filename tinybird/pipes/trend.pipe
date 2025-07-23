@@ -1,33 +1,23 @@
 DESCRIPTION >
-    Visits trend over time for the last 30 minutes, filling the blanks.
-    Works great for the realtime chart.
+    Real-time user activity over the last 30 minutes, grouped by time intervals.
+    Shows visitors activity for the trend chart.
 
 TOKEN "dashboard" READ
 
-NODE timeseries
-DESCRIPTION >
-    Generate a timeseries for the last 30 minutes, so we call fill empty data points
-
-SQL >
-    with (now() - interval 30 minute) as start
-    select addMinutes(toStartOfMinute(start), number) as t
-    from (select arrayJoin(range(1, 31)) as number)
-
-NODE hits
-DESCRIPTION >
-    Get last 30 minutes metrics gropued by minute
-
-SQL >
-    select toStartOfMinute(timestamp) as t, uniq(session_id) as visits
-    from analytics_hits
-    where timestamp >= (now() - interval 30 minute)
-    group by toStartOfMinute(timestamp)
-    order by toStartOfMinute(timestamp)
-
 NODE endpoint
 DESCRIPTION >
-    Join and generate timeseries with metrics for the last 30 minutes
+    Get visitor counts in 5-minute intervals for the last 30 minutes
 
 SQL >
-    select a.t, b.visits from timeseries a left join hits b on a.t = b.t order by a.t
-TYPE endpoint
+    SELECT 
+        toStartOfInterval(timestamp, toIntervalMinute(5)) as t,
+        uniq(session_id) as visits
+    FROM analytics_hits
+    WHERE timestamp >= now() - toIntervalMinute(30)
+      AND timestamp <= now()
+      AND session_id != '0'
+      AND session_id != ''
+    GROUP BY t
+    ORDER BY t
+    
+TYPE endpoint 

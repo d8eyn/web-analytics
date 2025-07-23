@@ -1,11 +1,12 @@
 DESCRIPTION >
-    Pages analytics materialized view with comprehensive tracking data
+    Custom events analytics materialized view with business event metrics
 
 SCHEMA >
     `date` Date,
     `hostname` String,
-    `pathname` String,
-    `title` SimpleAggregateFunction(any, String),
+    `event_name` String,
+    `event_meta_key` String,
+    `event_meta_value` String,
     `device` String,
     `browser` String,
     `os` String,
@@ -20,11 +21,10 @@ SCHEMA >
     `utm_term` String,
     `language` LowCardinality(String),
     `screen_class` LowCardinality(String),
-    `visits` AggregateFunction(uniq, UInt64),
-    `hits` AggregateFunction(count),
-    `total_duration` AggregateFunction(sum, UInt32),
-    `bounces` AggregateFunction(countIf, UInt8)
+    `unique_users` AggregateFunction(uniq, UInt64),
+    `event_count` AggregateFunction(count),
+    `total_duration` AggregateFunction(sum, UInt32)
 
 ENGINE AggregatingMergeTree
 ENGINE_PARTITION_KEY toYYYYMM(date)
-ENGINE_SORTING_KEY date, hostname, pathname, device, browser, country_code
+ENGINE_SORTING_KEY date, hostname, event_name, event_meta_key, device, browser, country_code 

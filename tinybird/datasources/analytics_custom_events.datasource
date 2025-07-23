@@ -1,0 +1,41 @@
+DESCRIPTION >
+    Custom events data source - processed business events with full enrichment
+
+SCHEMA >
+    `timestamp` DateTime,
+    `client_id` UInt64,
+    `visitor_id` UInt64,
+    `session_id` String,
+    `event_name` String,
+    `event_meta_keys` Array(String),
+    `event_meta_values` Array(String),
+    `duration_seconds` UInt32,
+    `hostname` String,
+    `path` String,
+    `title` String,
+    `language` LowCardinality(String),
+    `country_code` LowCardinality(FixedString(2)),
+    `region` String,
+    `city` String,
+    `referrer` String,
+    `referrer_name` String,
+    `referrer_icon` String,
+    `os` LowCardinality(String),
+    `os_version` LowCardinality(String),
+    `browser` LowCardinality(String),
+    `browser_version` LowCardinality(String),
+    `desktop` Int8,
+    `mobile` Int8,
+    `screen_class` LowCardinality(String),
+    `utm_source` String,
+    `utm_medium` String,
+    `utm_campaign` String,
+    `utm_content` String,
+    `utm_term` String,
+    `channel` LowCardinality(String)
+
+ENGINE MergeTree
+ENGINE_PARTITION_KEY toYYYYMM(timestamp)
+ENGINE_SORTING_KEY timestamp, client_id, visitor_id, event_name
+ENGINE_TTL timestamp + toIntervalDay(60)
+ENGINE_SAMPLING_KEY visitor_id 

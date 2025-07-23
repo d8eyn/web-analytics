@@ -1,0 +1,136 @@
+DESCRIPTION >
+    Process page views with tagging support from analytics_events and materialize to analytics_page_views
+
+TOKEN "dashboard" READ
+
+NODE page_views_raw
+DESCRIPTION >
+    Filter and parse page view events with enrichment data and tagging
+
+SQL >
+    SELECT
+        timestamp,
+        client_id,
+        visitor_id,
+        session_id,
+        duration_seconds,
+        hostname,
+        path,
+        title,
+        language,
+        country_code,
+        region,
+        city,
+        referrer,
+        referrer_name,
+        referrer_icon,
+        os,
+        os_version,
+        browser,
+        browser_version,
+        desktop,
+        mobile,
+        screen_class,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        utm_content,
+        utm_term,
+        channel,
+        tag_keys,
+        tag_values,
+        user_agent,
+        lower(user_agent) as user_agent_lower
+    FROM analytics_events_new
+    WHERE action = 'page_hit'
+      AND bot = 0
+
+NODE page_views_enriched
+DESCRIPTION >
+    Enrich page views with device and browser detection
+
+SQL >
+    SELECT
+        timestamp,
+        client_id,
+        visitor_id,
+        session_id,
+        duration_seconds,
+        hostname,
+        path,
+        title,
+        language,
+        country_code,
+        region,
+        city,
+        referrer,
+        referrer_name,
+        referrer_icon,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        utm_content,
+        utm_term,
+        screen_class,
+        tag_keys,
+        tag_values,
+        -- Enrich OS if not provided
+        coalesce(nullif(os, ''), CASE
+            WHEN match(user_agent_lower, 'windows nt 10')
+            THEN 'Windows 10'
+            WHEN match(user_agent_lower, 'windows nt 6.3')
+            THEN 'Windows 8.1'
+            WHEN match(user_agent_lower, 'windows nt 6.1')
+            THEN 'Windows 7'
+            WHEN match(user_agent_lower, 'windows')
+            THEN 'Windows'
+            WHEN match(user_agent_lower, 'mac os x')
+            THEN 'macOS'
+            WHEN match(user_agent_lower, 'android')
+            THEN 'Android'
+            WHEN match(user_agent_lower, 'iphone|ipad|ipod')
+            THEN 'iOS'
+            WHEN match(user_agent_lower, 'linux')
+            THEN 'Linux'
+            ELSE 'Unknown'
+        END) as os,
+        -- Enrich OS version if not provided
+        coalesce(nullif(os_version, ''), '') as os_version,
+        -- Enrich browser if not provided
+        coalesce(nullif(browser, ''), CASE
+            WHEN match(user_agent_lower, 'edg/')
+            THEN 'Edge'
+            WHEN match(user_agent_lower, 'firefox|fxios')
+            THEN 'Firefox'
+            WHEN match(user_agent_lower, 'chrome|crios') AND NOT match(user_agent_lower, 'edg/')
+            THEN 'Chrome'
+            WHEN match(user_agent_lower, 'opera|opr/')
+            THEN 'Opera'
+            WHEN match(user_agent_lower, 'safari') AND NOT match(user_agent_lower, 'chrome|crios')
+            THEN 'Safari'
+            WHEN match(user_agent_lower, 'msie|trident')
+            THEN 'IE'
+            ELSE 'Unknown'
+        END) as browser,
+        -- Enrich browser version if not provided
+        coalesce(nullif(browser_version, ''), '') as browser_version,
+        desktop,
+        mobile,
+        -- Enrich channel if not provided
+        coalesce(nullif(channel, ''), CASE
+            WHEN referrer = '' OR referrer IS NULL
+            THEN 'Direct'
+            WHEN utm_source != '' AND utm_source IS NOT NULL
+            THEN 'Campaign'
+            WHEN match(lower(referrer), 'google|bing|yahoo|duckduckgo|yandex|baidu')
+            THEN 'Search'
+            WHEN match(lower(referrer), 'facebook|twitter|linkedin|instagram|youtube|tiktok|snapchat|pinterest|reddit')
+            THEN 'Social'
+            WHEN match(lower(referrer), 'gmail|outlook|mail')
+            THEN 'Email'
+            ELSE 'Referral'
+        END) as channel
+    FROM page_views_raw
+
+TYPE MATERIALIZED
+DATASOURCE analytics_page_views 

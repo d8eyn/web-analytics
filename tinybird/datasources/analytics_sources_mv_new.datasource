@@ -1,18 +1,17 @@
 DESCRIPTION >
-    Pages analytics materialized view with comprehensive tracking data
+    Traffic sources analytics materialized view with comprehensive attribution data
 
 SCHEMA >
     `date` Date,
     `hostname` String,
-    `pathname` String,
-    `title` SimpleAggregateFunction(any, String),
     `device` String,
     `browser` String,
     `os` String,
     `country_code` LowCardinality(String),
     `region` String,
-    `city` String,
     `channel` LowCardinality(String),
+    `referrer` String,
+    `referrer_name` String,
     `utm_source` String,
     `utm_medium` String,
     `utm_campaign` String,
@@ -27,4 +26,4 @@ SCHEMA >
 
 ENGINE AggregatingMergeTree
 ENGINE_PARTITION_KEY toYYYYMM(date)
-ENGINE_SORTING_KEY date, hostname, pathname, device, browser, country_code
+ENGINE_SORTING_KEY date, hostname, channel, referrer, utm_source

@@ -11,7 +11,7 @@ DESCRIPTION >
 
 SQL >
     %
-    select location, uniqMerge(visits) as visits, countMerge(hits) as hits
+    select country_code as location, uniqMerge(visits) as visits, countMerge(hits) as hits
     from analytics_pages_mv
     where
         {% if defined(date_from) %}

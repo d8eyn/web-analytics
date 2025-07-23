@@ -10,7 +10,8 @@
     "params": [
       {
         "values": [
-          "page_hit"
+          "page_hit",
+          "custom_event"
         ]
       }
     ]
@@ -25,25 +26,539 @@
       }
     ]
   },
+  "client_id": {
+    "type": "integer.random",
+    "params": [1, 1000]
+  },
+  "visitor_id": {
+    "type": "integer.random",
+    "params": [1, 100000]
+  },
+  "site_id": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "site-001",
+          "site-002", 
+          "site-003",
+          ""
+        ]
+      }
+    ]
+  },
+  "hostname": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "www.example.com",
+          "example.com",
+          "app.example.com",
+          "blog.example.com"
+        ]
+      }
+    ]
+  },
+  "path": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "/",
+          "/about",
+          "/products",
+          "/blog",
+          "/contact",
+          "/pricing",
+          "/features",
+          "/docs"
+        ]
+      }
+    ]
+  },
+  "title": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "Home Page",
+          "About Us",
+          "Our Products",
+          "Blog",
+          "Contact Us",
+          "Pricing",
+          "Features",
+          "Documentation"
+        ]
+      }
+    ]
+  },
+  "language": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "en-US",
+          "en-GB",
+          "es-ES",
+          "fr-FR",
+          "de-DE",
+          "it-IT",
+          "pt-BR",
+          "ja-JP"
+        ]
+      }
+    ]
+  },
+  "country_code": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "US",
+          "GB",
+          "CA",
+          "DE",
+          "FR",
+          "ES",
+          "IT",
+          "BR",
+          "JP",
+          "AU"
+        ]
+      }
+    ]
+  },
+  "region": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "California",
+          "New York",
+          "Texas",
+          "London",
+          "Berlin",
+          "Paris",
+          "Madrid",
+          "Tokyo",
+          "Sydney"
+        ]
+      }
+    ]
+  },
+  "city": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "San Francisco",
+          "New York",
+          "Los Angeles",
+          "London",
+          "Berlin",
+          "Paris",
+          "Madrid",
+          "Tokyo",
+          "Sydney",
+          "Toronto"
+        ]
+      }
+    ]
+  },
+  "referrer": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "",
+          "https://www.google.com",
+          "https://www.facebook.com",
+          "https://www.twitter.com",
+          "https://www.linkedin.com",
+          "https://www.bing.com",
+          "https://www.yahoo.com",
+          "https://www.reddit.com"
+        ]
+      }
+    ]
+  },
+  "referrer_name": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "",
+          "Google",
+          "Facebook",
+          "Twitter",
+          "LinkedIn",
+          "Bing",
+          "Yahoo",
+          "Reddit"
+        ]
+      }
+    ]
+  },
+  "referrer_icon": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "",
+          "google.png",
+          "facebook.png",
+          "twitter.png",
+          "linkedin.png",
+          "bing.png",
+          "yahoo.png",
+          "reddit.png"
+        ]
+      }
+    ]
+  },
+  "os": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "Windows 10",
+          "Windows 11",
+          "macOS",
+          "iOS",
+          "Android",
+          "Linux",
+          "Unknown"
+        ]
+      }
+    ]
+  },
+  "os_version": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "10.0",
+          "11.0",
+          "14.1",
+          "15.2",
+          "12.0",
+          "Ubuntu 20.04"
+        ]
+      }
+    ]
+  },
+  "browser": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "Chrome",
+          "Firefox",
+          "Safari",
+          "Edge",
+          "Opera",
+          "Unknown"
+        ]
+      }
+    ]
+  },
+  "browser_version": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "108.0",
+          "107.0",
+          "16.1",
+          "108.0.1462.54",
+          "94.0"
+        ]
+      }
+    ]
+  },
+  "desktop": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          0,
+          1
+        ]
+      }
+    ]
+  },
+  "mobile": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          0,
+          1
+        ]
+      }
+    ]
+  },
+  "screen_class": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "desktop",
+          "mobile",
+          "tablet",
+          "large-desktop"
+        ]
+      }
+    ]
+  },
+  "utm_source": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "",
+          "google",
+          "facebook",
+          "twitter",
+          "linkedin",
+          "newsletter",
+          "banner",
+          "direct"
+        ]
+      }
+    ]
+  },
+  "utm_medium": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "",
+          "cpc",
+          "social",
+          "email",
+          "organic",
+          "referral",
+          "display"
+        ]
+      }
+    ]
+  },
+  "utm_campaign": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "",
+          "summer-sale",
+          "product-launch",
+          "brand-awareness",
+          "retargeting",
+          "newsletter-signup"
+        ]
+      }
+    ]
+  },
+  "utm_content": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "",
+          "banner-ad",
+          "text-link",
+          "cta-button",
+          "sidebar"
+        ]
+      }
+    ]
+  },
+  "utm_term": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "",
+          "analytics",
+          "web tracking",
+          "dashboard",
+          "reporting"
+        ]
+      }
+    ]
+  },
+  "channel": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "Direct",
+          "Search",
+          "Social",
+          "Email",
+          "Campaign",
+          "Referral"
+        ]
+      }
+    ]
+  },
+  "duration_seconds": {
+    "type": "integer.random",
+    "params": [0, 300]
+  },
+  "event_name": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "",
+          "button_click",
+          "form_submit",
+          "video_play",
+          "download",
+          "signup",
+          "purchase"
+        ]
+      }
+    ]
+  },
+  "event_meta_keys": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          [],
+          ["button_id"],
+          ["form_type", "form_id"],
+          ["video_id", "duration"],
+          ["file_name", "file_type"]
+        ]
+      }
+    ]
+  },
+  "event_meta_values": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          [],
+          ["cta-main"],
+          ["contact", "contact-form"],
+          ["intro-video", "120"],
+          ["whitepaper.pdf", "pdf"]
+        ]
+      }
+    ]
+  },
+  "tag_keys": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          [],
+          ["category"],
+          ["category", "author"],
+          ["product_id", "price"]
+        ]
+      }
+    ]
+  },
+  "tag_values": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          [],
+          ["blog"],
+          ["tech", "john-doe"],
+          ["prod-123", "29.99"]
+        ]
+      }
+    ]
+  },
+  "user_agent": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 16_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Mobile/15E148 Safari/604.1",
+          "Mozilla/5.0 (Linux; Android 12; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Mobile Safari/537.36"
+        ]
+      }
+    ]
+  },
+  "ip": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "192.168.1.1",
+          "10.0.0.1",
+          "203.0.113.1",
+          "198.51.100.1",
+          "172.16.0.1"
+        ]
+      }
+    ]
+  },
+  "bot": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      }
+    ]
+  },
+  "bot_reason": {
+    "type": "mockingbird.pick",
+    "params": [
+      {
+        "values": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "Google Bot"
+        ]
+      }
+    ]
+  },
   "payload": {
     "type": "mockingbird.pick",
     "params": [
       {
         "values": [
-          "{ \"user-agent\":\"Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.79 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)\", \"locale\":\"en-US\", \"referrer\":\"https://www.kike.io\", \"pathname\":\"/blog-posts/data-market-whitebox-replaces-4-data-stack-tools-with-tinybird\", \"href\":\"https://www.tinybird.co/blog-posts/data-market-whitebox-replaces-4-data-stack-tools-with-tinybird\"}",
-          "{ \"user-agent\":\"Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html) Chrome/104.0.5112.79 Safari/537.36\", \"locale\":\"en-US\", \"location\":\"IT\", \"referrer\":\"https://www.hn.com\", \"pathname\":\"/guide/fine-tuning-csvs-for-fast-ingestion\", \"href\":\"https://www.tinybird.co/guide/fine-tuning-csvs-for-fast-ingestion\"}",
-          "{ \"user-agent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:103.0) Gecko/20100101 Firefox/103.0\", \"locale\":\"en-GB\", \"location\":\"ES\", \"referrer\":\"\", \"pathname\":\"/\", \"href\":\"https://www.tinybird.co\"}",
-          "{ \"user-agent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:103.0) Gecko/20100101 Firefox/103.0\", \"locale\":\"en-US\", \"location\":\"US\", \"referrer\":\"https://www.google.com\", \"pathname\":\"/\", \"href\":\"https://www.tinybird.co\"}",
-          "{ \"user-agent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36\", \"locale\":\"en-US\", \"location\":\"US\", \"referrer\":\"https://www.tinybird.co/why-tinybird\", \"pathname\":\"/pricing\", \"href\":\"https://www.tinybird.co/pricing\"}",
-          "{ \"user-agent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36\", \"locale\":\"en-US\", \"location\":\"US\", \"referrer\":\"https://www.google.com\", \"pathname\":\"/product\", \"href\":\"https://www.tinybird.co/product\"}",
-          "{ \"user-agent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36\", \"locale\":\"en-US\", \"location\":\"IL\", \"referrer\":\"https://www.google.com\", \"pathname\":\"/blog-posts/tips-5-adding-and-subtracting-intervals\", \"href\":\"https://www.tinybird.co/blog-posts/tips-5-adding-and-subtracting-intervals\"}",
-          "{ \"user-agent\":\"Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1\", \"locale\":\"es-ES\", \"location\":\"ES\", \"referrer\":\"https://www.twitter.com\", \"pathname\":\"/\", \"href\":\"https://www.tinybird.co\"}",
-          "{ \"user-agent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36\", \"locale\":\"en-US\", \"location\":\"GB\", \"referrer\":\"https://www.facebook.com\", \"pathname\":\"/\", \"href\":\"https://www.tinybird.co\"}",
-          "{ \"user-agent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36\", \"locale\":\"en-US\", \"location\":\"CH\", \"referrer\":\"https://www.qq.ch\", \"pathname\":\"guides\", \"href\":\"https://www.tinybird.co/guides\"}",
-          "{ \"user-agent\":\"Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.5249.118 Mobile Safari/537.36\", \"locale\":\"en-US\", \"location\":\"US\", \"referrer\":\"https://www.yandex.com\", \"pathname\":\"/product\", \"href\":\"https://www.tinybird.co/product\"}",
-          "{ \"user-agent\":\"Mozilla/5.0 (Linux; Android 13; SM-A102U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.5249.118 Mobile Safari/537.36\", \"locale\":\"en-US\", \"location\":\"FR\", \"referrer\":\"https://www.github.com\", \"pathname\":\"/pricing\", \"href\":\"https://www.tinybird.co/pricing\"}"
+          "{ \"user-agent\":\"Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.79 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)\", \"locale\":\"en-US\", \"referrer\":\"https://www.google.com\", \"pathname\":\"/\", \"href\":\"https://www.example.com\"}",
+          "{ \"user-agent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36\", \"locale\":\"en-US\", \"location\":\"US\", \"referrer\":\"https://www.facebook.com\", \"pathname\":\"/products\", \"href\":\"https://www.example.com/products\"}",
+          "{ \"user-agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0\", \"locale\":\"en-GB\", \"location\":\"GB\", \"referrer\":\"\", \"pathname\":\"/about\", \"href\":\"https://www.example.com/about\"}",
+          "{ \"user-agent\":\"Mozilla/5.0 (iPhone; CPU iPhone OS 15_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Mobile/15E148 Safari/604.1\", \"locale\":\"en-US\", \"location\":\"US\", \"referrer\":\"https://www.twitter.com\", \"pathname\":\"/contact\", \"href\":\"https://www.example.com/contact\"}"
         ]
       }
     ]
+  },
+  "server_timestamp": {
+    "type": "mockingbird.timestampNow"
   }
 }

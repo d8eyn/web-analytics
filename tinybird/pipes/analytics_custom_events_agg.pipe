@@ -1,0 +1,39 @@
+DESCRIPTION >
+    Aggregate custom events data with flattened metadata for analytics
+
+TOKEN "dashboard" READ
+
+NODE flattened_custom_events
+DESCRIPTION >
+    Aggregate custom events by date and dimensions
+
+SQL >
+    SELECT
+        toDate(timestamp) AS date,
+        hostname,
+        event_name,
+        '' as event_meta_key,
+        '' as event_meta_value,
+        'desktop' as device,
+        any(browser) as browser,
+        any(os) as os,
+        any(country_code) as country_code,
+        any(region) as region,
+        any(city) as city,
+        any(channel) as channel,
+        any(utm_source) as utm_source,
+        any(utm_medium) as utm_medium,
+        any(utm_campaign) as utm_campaign,
+        any(utm_content) as utm_content,
+        any(utm_term) as utm_term,
+        any(language) as language,
+        any(screen_class) as screen_class,
+        uniqState(visitor_id) AS unique_users,
+        countState() AS event_count,
+        sumState(duration_seconds) AS total_duration
+    FROM analytics_custom_events
+    GROUP BY 
+        date, hostname, event_name
+
+TYPE MATERIALIZED  
+DATASOURCE analytics_custom_events_mv 

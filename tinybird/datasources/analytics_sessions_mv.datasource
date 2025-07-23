@@ -1,12 +1,31 @@
+DESCRIPTION >
+    Sessions analytics materialized view with comprehensive session data
+
 SCHEMA >
     `date` Date,
     `session_id` String,
+    `client_id` SimpleAggregateFunction(any, UInt64),
+    `visitor_id` SimpleAggregateFunction(any, UInt64),
+    `hostname` SimpleAggregateFunction(any, String),
     `device` SimpleAggregateFunction(any, String),
     `browser` SimpleAggregateFunction(any, String),
-    `location` SimpleAggregateFunction(any, String),
+    `os` SimpleAggregateFunction(any, String),
+    `country_code` SimpleAggregateFunction(any, LowCardinality(String)),
+    `region` SimpleAggregateFunction(any, String),
+    `city` SimpleAggregateFunction(any, String),
+    `channel` SimpleAggregateFunction(any, LowCardinality(String)),
+    `language` SimpleAggregateFunction(any, LowCardinality(String)),
+    `utm_source` SimpleAggregateFunction(any, String),
+    `utm_medium` SimpleAggregateFunction(any, String),
+    `utm_campaign` SimpleAggregateFunction(any, String),
+    `entry_page` SimpleAggregateFunction(min, String),
+    `exit_page` SimpleAggregateFunction(max, String),
+    `entry_title` SimpleAggregateFunction(any, String),
     `first_hit` SimpleAggregateFunction(min, DateTime),
     `latest_hit` SimpleAggregateFunction(max, DateTime),
-    `hits` AggregateFunction(count)
+    `total_duration` AggregateFunction(sum, UInt32),
+    `page_views` AggregateFunction(count),
+    `is_bounce` SimpleAggregateFunction(any, UInt8)
 
 ENGINE AggregatingMergeTree
 ENGINE_PARTITION_KEY toYYYYMM(date)

@@ -1,126 +1,253 @@
-# Web Analytics template for Tinybird
+# UMNTR Web Analytics Platform
 
-Build your own web analytics platform using [Tinybird](https://www.tinybird.co/)'s Events API and Endpoints. Built with privacy and speed as top priorities, this template lets you get real-time metrics in a pre-built dashboard in just a few minutes without any knowledge about Tinybird. Our [free accounts](https://www.tinybird.co/pricing) serve up to 1000 requests per day and unlimited processed GB, more than enough to get started.
+A **privacy-first, self-hosted web analytics platform** built with [Tinybird](https://www.tinybird.co/) and Next.js. This platform provides real-time website analytics while maintaining complete control over your data pipeline.
 
-After you've finished the basic setup, expand your analytics with custom events tailored to your specific use cases (eCommerce, marketing, etc.), keeping the same real-time performance.
+🎯 **Key Features:**
+- ✅ **Privacy-first** - No external API calls, all data flows through your infrastructure
+- ✅ **Self-contained** - Single Next.js deployment serves dashboard, tracking script, and API
+- ✅ **Generic branding** - Tracking script uses generic `script.js` name for discretion
+- ✅ **Multi-site support** - Track multiple websites with unique site IDs
+- ✅ **Real-time analytics** - Powered by Tinybird for instant insights
+- ✅ **Custom events** - Track custom interactions and conversions
+- ✅ **GDPR compliant** - Full data ownership and control
 
-![Tinybird Web Analytics Dashboard](./assets/img/repo-banner.png)
+![UMNTR Web Analytics Dashboard](./dashboard-template.png)
 
-## Get started
+## 🚀 Quick Start
 
-### Set up the data project
+### 1. Set up Tinybird Backend
 
-To deploy this template on Tinybird:
+Deploy the analytics schema to Tinybird:
 
 ```bash
 curl -sSL https://tinybird.co | bash
 tb login
-tb --cloud deploy --template https://github.com/tinybirdco/web-analytics-starter-kit/tree/main/tinybird
+cd tinybird
+tb --cloud deploy
 ```
 
-Follow the guided process, and your Tinybird workspace is now ready to start receiving events. All your Data Sources, [Materialized Views](https://www.tinybird.co/guide/materialized-views), and API Endpoints should be installed and ready. If you go to the **Data Flow** tab, you should see something like this:
+This creates all necessary Data Sources, Materialized Views, and API Endpoints in your Tinybird workspace.
 
-![Data flow](./assets/img/data_flow.png)
+### 2. Deploy to Vercel
 
-### Send events to your data source
+Deploy the dashboard and tracking infrastructure:
 
-Copy the snippet from the banner and paste it within your site `<head>` section:
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-repo/web-analytics&project-name=umntr-analytics&repository-name=umntr-analytics&root-directory=dashboard)
 
-![Banner showed to copy HTML snippet](./assets/img/banner_snippet.png)
+**Environment Variables:**
+- `TINYBIRD_TOKEN` - Your Tinybird API token
+- `CORS_ALLOW_ORIGIN` - Set to `*` or your specific domains
 
-The snippet looks like this:
+### 3. Add Tracking to Your Website
+
+Add the tracking script to your website's `<head>` section:
 
 ```html
-<script
-  defer
-  src="https://unpkg.com/@tinybirdco/flock.js"
-  data-token="YOUR_TRACKER_TOKEN"
-></script>
+<!-- Basic Integration -->
+<script 
+  src="https://your-dashboard.vercel.app/script.js"
+  data-site-id="44990">
+</script>
+
+<!-- Cross-Domain Integration (recommended) -->
+<script 
+  src="https://your-dashboard.vercel.app/script.js"
+  data-proxy="https://your-dashboard.vercel.app"
+  data-site-id="44990">
+</script>
 ```
 
-If everything is working correctly, you should start seeing rows in your Data Source as visitors view and interact with your website:
+**Replace:**
+- `your-dashboard.vercel.app` with your actual Vercel domain
+- `44990` with your unique site ID
 
-![Incoming events](./assets/img/events-incoming.svg)
+That's it! Your website will now send analytics data to your self-hosted platform.
 
-### Visualize the metrics on a readymade dashboard
+### 4. View Your Analytics
 
-Now you'll see a banner with a link to the dashboard. Click to open it:
+Access your analytics dashboard at:
+```
+https://your-dashboard.vercel.app/
+```
 
-![Analytics dashboard preview](./assets/img/banner_dashboard.png)
+The dashboard provides real-time insights including:
+- 📊 **Page views and unique visitors**
+- 🌍 **Geographic distribution** 
+- 📱 **Device and browser analytics**
+- 🔗 **Traffic sources and referrers**
+- ⏱️ **Real-time visitor tracking**
+- 📈 **Custom event tracking**
 
-Alternatively, you can always navigate to https://analytics.tinybird.co/ and paste your `dashboard` token.
+## 📋 Configuration Options
 
-You'll find this `dashboard` token already created for you on the Tinybird UI, under **Manage Auth Tokens**.
+### Tracking Script Attributes
 
-## Advanced
+| Attribute | Required | Description | Example |
+|-----------|----------|-------------|---------|
+| `data-site-id` | **Yes** | Unique identifier for your website | `"44990"` |
+| `data-proxy` | No | Your dashboard URL for cross-domain tracking | `"https://your-app.vercel.app"` |
+| `data-domain` | No | Override automatic domain detection | `"example.com"` |
+| `data-storage` | No | Storage method for session data | `"localStorage"` |
+| `data-custom-*` | No | Custom tracking attributes | `data-custom-plan="pro"` |
 
-### Local development and mock data
+### Storage Options
 
-See the [tinybird](./tinybird/README.md) and [dashboard](./dashboard/README.md) READMEs.
+- `cookie` (default) - Browser cookies
+- `localStorage` - Persistent local storage
+- `sessionStorage` - Session-only storage
 
-### CLI installation of the Tinybird project
+## 🛠️ Development
 
-1. Install the Tinybird CLI using `curl https://tinybird.co | bash`
-2. Create a [Tinybird](https://tinybird.co) account and a workspace by running `tb login`
-3. Clone this repository:
+### Local Development
 
 ```bash
-git clone https://github.com/tinybirdco/web-analytics-starter-kit
-cd web-analytics-starter-kit
-cd tinybird
+# Install dependencies
+npm install
+
+# Run dashboard in development
+npm run dev
+
+# Build for production
+npm run build
+
+# Verify setup
+npm run verify
 ```
 
-4. Deploy the project using `tb --cloud deploy`.
+### Project Structure
 
-### Hosting your own dashboard on Vercel
+```
+dashboard/                  # Next.js application
+├── public/
+│   └── script.js          # 📊 Generic tracking script
+├── pages/
+│   ├── api/
+│   │   └── track.js       # 🛡️ Analytics API endpoint
+│   └── index.tsx          # 📈 Analytics dashboard
+tinybird/                  # Tinybird schema & pipes
+├── datasources/           # Data source definitions
+├── pipes/                 # SQL processing pipelines
+└── README.md             # Tinybird deployment guide
+```
 
-If you want to customize & host your own dashboard, you can easily deploy the project to Vercel using the button below:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftinybirdco%2Fweb-analytics-starter-kit&project-name=tinybird-web-analytics-starter-kit&repository-name=tinybird-web-analytics-starter-kit&demo-title=Tinybird%20Web%20Analytics&demo-description=A%20privacy-first%20Web%20Analytics%20project%20built%20with%20Tinybird&demo-url=https%3A%2F%2Fanalytics.tinybird.co%2F&demo-image=//github.com/tinybirdco/web-analytics-starter-kit/blob/main/dashboard/public/banner.png?raw=true&root-directory=dashboard&integration-ids=oac_uoH2YyxhaS1H6UYvtuRbRbDY)
+## 📊 Advanced Features
 
+### Custom Events
 
-### Additional script parameters
+Track custom interactions and conversions:
 
-These parameters can be used with the example tracker snippet:
+```javascript
+// Track button clicks
+UMNTR.trackEvent('button_click', {
+  button: 'subscribe',
+  location: 'header'
+})
 
-| Parameter         | Mandatory | Description                                                                                                                                                                                       |
-| ----------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data-token`      | Yes       | Your `tracker` token. It's already created for you, you can find it on the Tinybird UI under "Manage Auth Tokens"                                                                                 |
-| `data-proxy`      | No        | Your domain URL to proxy the request, if you follow the optional steps for "GDPR Best Practices"                                                                                                  |
-| `data-host`       | No        | Tinybird host URL. Ddefaults to `https://api.tinybird.co/`, but could be `https://api.us-east.tinybird.co` or a dedicated cluster. The banner already generates the snippet with the proper host. |
-| `data-datasource` | No        | If you iterate the landing data source, or you just want to ingest the event in a different one, you can specify the landing data source name. 
+// Track eCommerce events
+UMNTR.trackEvent('add_to_cart', {
+  product_id: 'ABC123',
+  price: 29.99,
+  quantity: 1
+})
 
-### Implementing custom events
-
-The script also provides you with a function to send custom events. You can simply add this to your application at any point:
-
-```js
-Tinybird.trackEvent('add_to_cart', {
-  partnumber: 'A1708 (EMC 3164)',
-  quantity: 1,
+// Track form submissions
+UMNTR.trackEvent('form_submit', {
+  form_name: 'contact',
+  lead_source: 'organic'
 })
 ```
 
-You can also fork the dashboard project in this repository and create custom components for your new events. It's a Next.js project, so you can deploy it easily on [Vercel](https://vercel.com/).
+### Multi-Site Tracking
 
-### Implementing custom attributes
+Track multiple websites with unique site IDs:
 
-You can include custom attributes in the import library snippet. Attributes name must have **tb\_** prefix. Every attribute included with this requirement would be saved in the payload column of your analytics_events datasource and will be included in every event. For example:
+```html
+<!-- Website A -->
+<script 
+  src="https://your-dashboard.vercel.app/script.js"
+  data-site-id="44990"
+  data-proxy="https://your-dashboard.vercel.app">
+</script>
 
-```js
-<script
-  src="https://unpkg.com/@tinybirdco/flock.js"
-  data-token="TOKEN-ID"
-  tb_customer_id="CUSTOMER_ID"
-></script>
+<!-- Website B -->
+<script 
+  src="https://your-dashboard.vercel.app/script.js"
+  data-site-id="55001"
+  data-proxy="https://your-dashboard.vercel.app">
+</script>
 ```
 
-Would append customer_id:CUSTOMER_ID to the rest of variables saved in payload column.
+### Custom Attributes
 
-## GDPR
+Add custom data to all tracking events:
 
-Tinybird is GDPR compliant as a platform, but it is your responsibility to follow GDPR's rules on data collection and consent when implementing your web analytics.
+```html
+<script 
+  src="https://your-dashboard.vercel.app/script.js"
+  data-site-id="44990"
+  data-custom-plan="premium"
+  data-custom-version="2.1"
+  data-custom-segment="enterprise">
+</script>
+```
+
+### API Integration
+
+Send events directly via API:
+
+```javascript
+fetch('https://your-dashboard.vercel.app/api/track', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    action: 'custom_event',
+    site_id: '44990',
+    timestamp: new Date().toISOString(),
+    session_id: 'user_session_id',
+    // ... additional event data
+  })
+})
+```
+
+## 🔒 Privacy & Security
+
+### GDPR Compliance
+- ✅ **No external API calls** - all data stays within your infrastructure
+- ✅ **No third-party cookies** - first-party tracking only
+- ✅ **Data ownership** - you control all analytics data
+- ✅ **IP anonymization** - server-side IP processing
+- ✅ **Configurable storage** - respect user preferences
+
+### Security Features
+- ✅ **Rate limiting** - 1000 requests/minute/IP protection
+- ✅ **Bot detection** - server and client-side filtering
+- ✅ **Data validation** - comprehensive input sanitization
+- ✅ **CORS protection** - configurable cross-origin policies
+
+## 🎯 Key Benefits
+
+| Feature | Traditional Analytics | UMNTR Analytics |
+|---------|----------------------|-----------------|
+| **Privacy** | Third-party cookies | First-party only |
+| **Data Ownership** | Vendor controlled | You own everything |
+| **Performance** | External dependencies | Self-hosted |
+| **Customization** | Limited | Fully customizable |
+| **Real-time** | Delayed reporting | Instant insights |
+| **Cost** | Per-event pricing | Fixed infrastructure |
+
+## 📚 Documentation
+
+- 📖 [Deployment Guide](./DEPLOYMENT_GUIDE.md) - Detailed setup instructions
+- 🏗️ [Tinybird Schema](./tinybird/README.md) - Database schema and pipes
+- 📊 [Dashboard Guide](./dashboard/README.md) - Dashboard customization
+
+## 🤝 Support
+
+- 💬 [Tinybird Community Slack](https://www.tinybird.co/join-our-slack-community)
+- 📖 [Tinybird Documentation](https://docs.tinybird.co/)
+- 🐛 [GitHub Issues](https://github.com/your-repo/issues)
 
 ---
 
-Need help?: [Community Slack](https://www.tinybird.co/join-our-slack-community) &bull; [Tinybird Docs](https://docs.tinybird.co/)
+**Built with ❤️ for privacy-conscious analytics**

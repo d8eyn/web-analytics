@@ -16,6 +16,12 @@ import useKpis from '../lib/hooks/use-kpis'
 import useKpiTotals from '../lib/hooks/use-kpi-totals'
 import { typography } from '../styles/theme'
 import useDomain from '../lib/hooks/use-domain'
+import PagesSection from './PagesSection'
+import ReferrersSection from './ReferrersSection'
+import ConversionGoals from './ConversionGoals'
+import EventsSection from './EventsSection'
+import LocationsSection from './LocationsSection'
+import TechnologySection from './TechnologySection'
 
 const enum WidgetHeight {
   XLarge = 588,
@@ -38,17 +44,11 @@ export default function Widgets() {
 
     return `${apiUrl}/v0/pipes/${endpoint}.json`
   }
-  const topSourcesEndpoint = buildEndointUrl(host, 'top_sources')
-  const topPagesEndpoint = buildEndointUrl(host, 'top_pages')
-  const topDevicesEndpoint = buildEndointUrl(host, 'top_devices')
-  const topBrowsersEndpoint = buildEndointUrl(host, 'top_browsers')
-  const topLocationsEndpoint = buildEndointUrl(host, 'top_locations')
   const trendEndpoint = buildEndointUrl(host, 'trend')
   const kpisEndpoint = buildEndointUrl(host, 'kpis')
   const { startDate, endDate } = useDateFilter()
   const { kpi, setKpi } = useKpis()
   const { data: kpiTotals } = useKpiTotals()
-  const { domain } = useDomain()
 
   return (
     <ChartProvider
@@ -65,9 +65,10 @@ export default function Widgets() {
         fontSize: 12,
       }}
     >
-      <div className="grid grid-cols-2 gap-5 sm:gap-10 grid-rows-3-auto">
+      <div className="space-y-6">
+        {/* KPIs and Main Chart */}
         <div
-          className="col-span-2 relative"
+          className="relative"
           style={{ height: WidgetHeight.XLarge }}
         >
           <div className="absolute top-0 left-0 right-0 z-10">
@@ -102,136 +103,51 @@ export default function Widgets() {
             }}
           />
         </div>
-        <div className="col-start-1 col-span-2 lg:col-span-1 grid grid-cols-1 gap-5 sm:gap-10 grid-rows-3-auto">
-          <InView height={WidgetHeight.Small}>
-            <BarChart
-              endpoint={trendEndpoint}
-              index="t"
-              categories={['visits']}
-              title="Users in last 30 minutes"
-              height={WidgetHeight.Small}
-              options={{
-                yAxis: { show: false },
-                xAxis: { show: false },
-              }}
-              params={{
-                date_from: startDate,
-                date_to: endDate,
-              }}
-            />
-          </InView>
-          <InView height={WidgetHeight.Large}>
-            <BarList
-              endpoint={topPagesEndpoint}
-              index="pathname"
-              categories={['visits', 'hits']}
-              title="Top Pages"
-              params={{
-                limit: 8,
-                date_from: startDate,
-                date_to: endDate,
-              }}
-              height={WidgetHeight.Large}
-              indexConfig={{
-                renderBarContent: item => (
-                  <a
-                    className="truncate hover:underline"
-                    href={`https://${domain}${item.label}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {item.label}
-                  </a>
-                ),
-              }}
-            />
-          </InView>
-          <InView height={WidgetHeight.Large}>
-            <BarList
-              endpoint={topLocationsEndpoint}
-              index="location"
-              categories={['visits', 'hits']}
-              title="Top Locations"
-              params={{
-                limit: 8,
-                date_from: startDate,
-                date_to: endDate,
-              }}
-              height={WidgetHeight.Large}
-              indexConfig={{
-                renderBarContent: item => item.label || 'Unknown',
-              }}
-            />
-          </InView>
-        </div>
-        <div className="col-start-1 col-span-2 lg:col-start-2 lg:col-span-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-5 sm:gap-10 grid-rows-2-auto lg:grid-rows-3-auto">
-          <div className="col-span-1 md:col-span-2 lg:col-span-1">
-            <InView height={WidgetHeight.Large}>
-              <BarList
-                endpoint={topSourcesEndpoint}
-                index="referrer"
-                categories={['visits', 'hits']}
-                title="Top Sources"
+
+        {/* Main Dashboard Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column */}
+          <div className="space-y-6">
+            {/* Pages Section */}
+            <PagesSection height={WidgetHeight.Large} />
+
+            {/* Referrers Section */}
+            <ReferrersSection height={WidgetHeight.Large} />
+
+            {/* Conversion Goals */}
+            <ConversionGoals height={WidgetHeight.Medium} />
+
+            {/* Events Section */}
+            <EventsSection height={WidgetHeight.Medium} />
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-6">
+            {/* Current Visitors Trend */}
+            <InView height={WidgetHeight.Small}>
+              <BarChart
+                endpoint={trendEndpoint}
+                index="t"
+                categories={['visits']}
+                title="Users in last 30 minutes"
+                height={WidgetHeight.Small}
+                options={{
+                  yAxis: { show: false },
+                  xAxis: { show: false },
+                }}
                 params={{
-                  limit: 8,
                   date_from: startDate,
                   date_to: endDate,
                 }}
-                height={WidgetHeight.Large}
-                indexConfig={{
-                  renderBarContent: item =>
-                    item.label ? (
-                      <a
-                        href={`https://${item.label}`}
-                        className="truncate hover:underline"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {item.label}
-                      </a>
-                    ) : (
-                      'Direct'
-                    ),
-                }}
               />
             </InView>
+
+            {/* Countries/Locations Section */}
+            <LocationsSection height={WidgetHeight.Large} />
+
+            {/* Technology Section (OS/Browsers/etc) */}
+            <TechnologySection height={WidgetHeight.Large} />
           </div>
-          <InView height={WidgetHeight.Medium}>
-            <DonutChart
-              endpoint={topDevicesEndpoint}
-              index="device"
-              categories={['visits', 'hits']}
-              title="Top Devices"
-              params={{
-                limit: 8,
-                date_from: startDate,
-                date_to: endDate,
-              }}
-              height={WidgetHeight.Medium}
-              showLegend
-              options={{
-                yAxis: { show: false },
-              }}
-            />
-          </InView>
-          <InView height={WidgetHeight.Medium}>
-            <PieChart
-              endpoint={topBrowsersEndpoint}
-              index="browser"
-              categories={['visits', 'hits']}
-              title="Top Browsers"
-              params={{
-                limit: 8,
-                date_from: startDate,
-                date_to: endDate,
-              }}
-              height={WidgetHeight.Medium}
-              showLegend
-              options={{
-                yAxis: { show: false },
-              }}
-            />
-          </InView>
         </div>
       </div>
     </ChartProvider>

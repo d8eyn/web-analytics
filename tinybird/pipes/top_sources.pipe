@@ -12,7 +12,7 @@ DESCRIPTION >
 SQL >
     %
     select domainWithoutWWW(referrer) as referrer, uniqMerge(visits) as visits, countMerge(hits) as hits
-    from analytics_sources_mv
+    from analytics_sources_mv_new
     where
         {% if defined(date_from) %}
             date

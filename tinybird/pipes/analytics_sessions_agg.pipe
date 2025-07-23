@@ -1,0 +1,38 @@
+NODE analytics_sessions_1
+DESCRIPTION >
+    Aggregate session data from analytics events
+
+SQL >
+    SELECT
+        toDate(timestamp) AS date,
+        session_id,
+        any(client_id) AS client_id,
+        any(visitor_id) AS visitor_id,
+        any(hostname) AS hostname,
+        any('desktop') AS device,
+        any('chrome') AS browser,
+        any('Unknown') AS os,
+        any(country_code) AS country_code,
+        any(region) AS region,
+        any(city) AS city,
+        any('Direct') AS channel,
+        any(language) AS language,
+        any(utm_source) AS utm_source,
+        any(utm_medium) AS utm_medium,
+        any(utm_campaign) AS utm_campaign,
+        any(coalesce(path, JSONExtractString(payload, 'pathname'))) AS entry_page,
+        any(coalesce(path, JSONExtractString(payload, 'pathname'))) AS exit_page,
+        any(coalesce(title, JSONExtractString(payload, 'title'))) AS entry_title,
+        minState(timestamp) AS first_hit,
+        maxState(timestamp) AS latest_hit,
+        sumState(duration_seconds) AS total_duration,
+        countState() AS page_views,
+        anyState(0) AS is_bounce
+    FROM analytics_events_new
+    WHERE action = 'page_hit' 
+      AND session_id != '0' 
+      AND session_id != ''
+    GROUP BY date, session_id
+
+TYPE MATERIALIZED
+DATASOURCE analytics_sessions_mv

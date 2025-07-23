@@ -1,0 +1,81 @@
+DESCRIPTION >
+    Process all requests including bot detection from analytics_events and materialize to analytics_requests
+
+TOKEN "dashboard" READ
+
+NODE requests_raw
+DESCRIPTION >
+    Filter and parse all request events including bot traffic
+
+SQL >
+    SELECT
+        timestamp,
+        client_id,
+        visitor_id,
+        hostname,
+        path,
+        event_name,
+        referrer,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        user_agent,
+        ip,
+        bot,
+        bot_reason
+    FROM analytics_events_new
+    WHERE 1=1
+
+NODE requests_enriched  
+DESCRIPTION >
+    Enrich requests with enhanced bot detection
+
+SQL >
+    SELECT
+        timestamp,
+        client_id,
+        visitor_id,
+        hostname,
+        path,
+        event_name,
+        referrer,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        user_agent,
+        ip,
+        -- Enhanced bot detection
+        CASE
+            WHEN bot = 1 THEN 1
+            WHEN match(lower(user_agent), 'wget|ahrefsbot|curl|urllib|bitdiscovery|\+https://|googlebot|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegram|bot|crawler|spider|scraper')
+            THEN 1
+            WHEN length(user_agent) < 10 
+            THEN 1
+            WHEN user_agent = ''
+            THEN 1
+            ELSE 0
+        END as bot,
+        -- Enhanced bot reason
+        CASE 
+            WHEN bot_reason != '' THEN bot_reason
+            WHEN bot = 1 THEN 'Original Detection'
+            WHEN match(lower(user_agent), 'googlebot') THEN 'Google Bot'
+            WHEN match(lower(user_agent), 'bingbot') THEN 'Bing Bot'
+            WHEN match(lower(user_agent), 'slurp') THEN 'Yahoo Bot'
+            WHEN match(lower(user_agent), 'duckduckbot') THEN 'DuckDuckGo Bot'
+            WHEN match(lower(user_agent), 'baiduspider') THEN 'Baidu Bot'
+            WHEN match(lower(user_agent), 'yandexbot') THEN 'Yandex Bot'
+            WHEN match(lower(user_agent), 'facebookexternalhit') THEN 'Facebook Bot'
+            WHEN match(lower(user_agent), 'twitterbot') THEN 'Twitter Bot'
+            WHEN match(lower(user_agent), 'linkedinbot') THEN 'LinkedIn Bot'
+            WHEN match(lower(user_agent), 'ahrefsbot') THEN 'Ahrefs Bot'
+            WHEN match(lower(user_agent), 'wget|curl') THEN 'Command Line Tool'
+            WHEN match(lower(user_agent), 'bot|crawler|spider|scraper') THEN 'Generic Bot'
+            WHEN length(user_agent) < 10 THEN 'Short User Agent'
+            WHEN user_agent = '' THEN 'Empty User Agent'
+            ELSE ''
+        END as bot_reason
+    FROM requests_raw
+
+TYPE MATERIALIZED
+DATASOURCE analytics_requests 

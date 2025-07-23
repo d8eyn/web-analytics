@@ -1,18 +1,37 @@
 NODE analytics_pages_1
 DESCRIPTION >
-    Aggregate by pathname and calculate session and hits
+    Aggregate page data with comprehensive tracking metrics
 
 SQL >
     SELECT
         toDate(timestamp) AS date,
-        device,
-        browser,
-        location,
-        pathname,
-        uniqState(session_id) AS visits,
-        countState() AS hits
-    FROM analytics_hits
-    GROUP BY date, device, browser, location, pathname
+        hostname,
+        coalesce(path, JSONExtractString(payload, 'pathname')) as pathname,
+        any(coalesce(title, JSONExtractString(payload, 'title'))) AS title,
+        'desktop' as device,
+        any('chrome') as browser,
+        any('Unknown') as os,
+        any(country_code) AS country_code,
+        any(region) as region,
+        any(city) as city,
+        any('Direct') as channel,
+        any(utm_source) as utm_source,
+        any(utm_medium) as utm_medium,
+        any(utm_campaign) as utm_campaign,
+        any(utm_content) as utm_content,
+        any(utm_term) as utm_term,
+        any(language) as language,
+        any(screen_class) as screen_class,
+        uniqState(visitor_id) AS visits,
+        countState() AS hits,
+        sumState(duration_seconds) AS total_duration,
+        countIfState(duration_seconds <= 10) AS bounces
+    FROM analytics_events_new
+    WHERE action = 'page_hit' 
+      AND session_id != '0' 
+      AND session_id != ''
+    GROUP BY 
+        date, hostname, pathname
 
 TYPE MATERIALIZED
 DATASOURCE analytics_pages_mv

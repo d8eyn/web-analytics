@@ -1,0 +1,22 @@
+{
+  "name": "umntr-web-analytics",
+  "version": "1.0.0",
+  "description": "UMNTR Web Analytics Platform - Simple Next.js setup",
+  "private": true,
+  "scripts": {
+    "build": "cd dashboard && npm run build",
+    "dev": "cd dashboard && npm run dev",
+    "start": "cd dashboard && npm start",
+    "verify": "ls -la dashboard/public/script.js dashboard/pages/api/track.js"
+  },
+  "workspaces": [
+    "dashboard"
+  ],
+  "keywords": [
+    "analytics",
+    "tracking", 
+    "tinybird",
+    "umntr",
+    "nextjs"
+  ]
+} 
