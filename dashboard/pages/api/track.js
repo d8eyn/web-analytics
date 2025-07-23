@@ -92,7 +92,9 @@ const _postEvent = async (event, req) => {
         }
     };
     
-    const response = await fetch(`https://api.tinybird.co/v0/events?name=${DATASOURCE}`, options);
+    // Use the correct regional endpoint from environment
+    const tinybirdHost = process.env.TINYBIRD_HOST || process.env.NEXT_PUBLIC_TINYBIRD_HOST || 'https://api.tinybird.co';
+    const response = await fetch(`${tinybirdHost}/v0/events?name=${DATASOURCE}`, options);
     if (!response.ok) {
         throw new Error(`Tinybird error: ${response.statusText}`);
     }
