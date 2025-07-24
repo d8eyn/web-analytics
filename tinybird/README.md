@@ -30,7 +30,7 @@ This Tinybird configuration provides comprehensive web analytics tracking with e
 
 ### Primary Landing Tables
 
-#### `analytics_events_new`
+#### `analytics_events_api`
 **Primary analytics events datasource** - Main landing table for all tracking data
 - **Purpose**: Collects all raw analytics events (page views, custom events)
 - **Schema**: 43 fields including user identification, geographic data, device intelligence, UTM parameters
@@ -45,12 +45,6 @@ This Tinybird configuration provides comprehensive web analytics tracking with e
 - **Key Features**: Bot-filtered, enriched with device/browser data, supports tagging
 - **Retention**: 60 days
 
-#### `analytics_sessions`
-**Session-level analytics** - Session data with versioned collapsing merge tree
-- **Purpose**: Tracks complete user sessions with entry/exit pages and bounce detection
-- **Schema**: 34 fields including session metrics, geographic attribution, campaign data
-- **Key Features**: Session duration, bounce detection, entry/exit tracking
-- **Engine**: Versioned CollapsibleMergeTree for session updates
 
 #### `analytics_custom_events`
 **Business events** - Custom events with flexible metadata
@@ -339,7 +333,7 @@ tb push --force
 ### 2. Generate Test Data
 ```bash
 # Generate comprehensive test data
-tb datasource generate analytics_events_new --count 10000
+tb datasource generate analytics_events_api --count 10000
 ```
 
 ### 3. Query Analytics
@@ -536,7 +530,7 @@ TB_TOKEN=your_dashboard_token_here
 ```
 
 ### Token Permissions
-- **tracker**: Append data to analytics_events_new
+- **tracker**: Append data to analytics_events_api
 - **dashboard**: Read access for all analytics queries and pipes
 
 ### Deployment Commands
@@ -548,7 +542,7 @@ tb deploy --cloud
 tb pipe push tinybird/pipes/kpis.pipe --cloud
 
 # Generate test data
-tb datasource generate analytics_events_new --count 50000
+tb datasource generate analytics_events_api --count 50000
 ```
 
 ## 🔧 Local Development
@@ -584,7 +578,7 @@ tb workspace ls
 ### 4. Generate Test Data
 ```bash
 # Generate realistic test data
-tb datasource generate analytics_events_new --count 25000
+tb datasource generate analytics_events_api --count 25000
 
 # Generate custom events
 tb datasource generate analytics_custom_events --count 5000
@@ -635,14 +629,14 @@ This analytics platform integrates with the React dashboard:
 ```sql
 -- Check data freshness
 SELECT max(timestamp) as last_event 
-FROM analytics_events_new;
+FROM analytics_events_api;
 
 -- Monitor bot detection rates
 SELECT 
     bot,
     count() as events,
-    count() * 100.0 / (SELECT count() FROM analytics_events_new) as percentage
-FROM analytics_events_new 
+    count() * 100.0 / (SELECT count() FROM analytics_events_api) as percentage
+FROM analytics_events_api 
 GROUP BY bot;
 
 -- Performance monitoring
@@ -650,7 +644,7 @@ SELECT
     action,
     count() as events,
     avg(server_timestamp - timestamp) as processing_delay_seconds
-FROM analytics_events_new
+FROM analytics_events_api
 WHERE timestamp >= now() - interval 1 hour
 GROUP BY action;
 ```
@@ -668,12 +662,12 @@ GROUP BY action;
 ```sql
 -- User data export (GDPR)
 SELECT *
-FROM analytics_events_new
+FROM analytics_events_api
 WHERE visitor_id = {user_visitor_id}
 ORDER BY timestamp DESC;
 
 -- Data deletion (Right to be forgotten)
-DELETE FROM analytics_events_new 
+DELETE FROM analytics_events_api 
 WHERE visitor_id = {user_visitor_id};
 ```
 

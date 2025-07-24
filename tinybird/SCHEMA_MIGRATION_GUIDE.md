@@ -60,17 +60,9 @@ Stores clean, processed page view data with:
 - UTM campaign data
 - Page metadata and tagging
 
-### 3. Sessions Data Source (`analytics_sessions`)
-**Session-level analytics with versioned collapsing merge tree**
 
-Features:
-- Session duration and bounce detection
-- Entry and exit page tracking
-- Geographic and device session attribution
-- Campaign attribution at session level
-- Version-controlled session updates
 
-### 4. Custom Events Data Source (`analytics_custom_events`)
+### 3. Custom Events Data Source (`analytics_custom_events`)
 **Custom business events with flexible metadata**
 
 Supports:
@@ -79,7 +71,7 @@ Supports:
 - Full user context preservation
 - Geographic and device attribution
 
-### 5. Requests Data Source (`analytics_requests`)
+### 4. Requests Data Source (`analytics_requests`)
 **Raw request tracking and bot detection**
 
 Includes:
@@ -238,7 +230,7 @@ tb datasource generate analytics_events --count 10000
 ### Data Source Updates
 - [x] Enhanced `analytics_events` with 35+ new fields
 - [x] Created `analytics_page_views` for processed page data
-- [x] Created `analytics_sessions` for session analytics
+
 - [x] Created `analytics_custom_events` for business events
 - [x] Created `analytics_requests` for security tracking
 

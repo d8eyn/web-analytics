@@ -16,12 +16,12 @@ import useKpis from '../lib/hooks/use-kpis'
 import useKpiTotals from '../lib/hooks/use-kpi-totals'
 import { typography } from '../styles/theme'
 import useDomain from '../lib/hooks/use-domain'
-import PagesSection from './PagesSection'
-import ReferrersSection from './ReferrersSection'
-import ConversionGoals from './ConversionGoals'
-import EventsSection from './EventsSection'
-import LocationsSection from './LocationsSection'
-import TechnologySection from './TechnologySection'
+import { PagesSection } from './PagesSection'
+import { ReferrersSection } from './ReferrersSection'
+import { ConversionGoals } from './ConversionGoals'
+import { EventsSection } from './EventsSection'
+import { LocationsSection } from './LocationsSection'
+import { TechnologySection } from './TechnologySection'
 
 const enum WidgetHeight {
   XLarge = 588,
@@ -109,16 +109,16 @@ export default function Widgets() {
           {/* Left Column */}
           <div className="space-y-6">
             {/* Pages Section */}
-            <PagesSection height={WidgetHeight.Large} />
+            <PagesSection />
 
             {/* Referrers Section */}
-            <ReferrersSection height={WidgetHeight.Large} />
+            <ReferrersSection />
 
             {/* Conversion Goals */}
-            <ConversionGoals height={WidgetHeight.Medium} />
+            <ConversionGoals />
 
             {/* Events Section */}
-            <EventsSection height={WidgetHeight.Medium} />
+            <EventsSection />
           </div>
 
           {/* Right Column */}
@@ -143,10 +143,10 @@ export default function Widgets() {
             </InView>
 
             {/* Countries/Locations Section */}
-            <LocationsSection height={WidgetHeight.Large} />
+            <LocationsSection />
 
             {/* Technology Section (OS/Browsers/etc) */}
-            <TechnologySection height={WidgetHeight.Large} />
+            <TechnologySection />
           </div>
         </div>
       </div>

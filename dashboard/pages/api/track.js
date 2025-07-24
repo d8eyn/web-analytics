@@ -1,4 +1,4 @@
-const DATASOURCE = 'analytics_events_new';
+const DATASOURCE = 'analytics_events_api';
 const MAX_PAYLOAD_SIZE = 10 * 1024; // 10KB limit
 
 /**
@@ -9,17 +9,29 @@ const getClientIP = (req) => {
     const realIp = req.headers['x-real-ip'];
     const cfConnectingIp = req.headers['cf-connecting-ip'];
     
+    let ip = '0.0.0.0';
+    
     if (forwarded) {
-        return forwarded.split(',')[0].trim();
-    }
-    if (realIp) {
-        return realIp;
-    }
-    if (cfConnectingIp) {
-        return cfConnectingIp;
+        ip = forwarded.split(',')[0].trim();
+    } else if (realIp) {
+        ip = realIp;
+    } else if (cfConnectingIp) {
+        ip = cfConnectingIp;
+    } else {
+        ip = req.socket.remoteAddress || '0.0.0.0';
     }
     
-    return req.socket.remoteAddress || '0.0.0.0';
+    // Convert IPv6 localhost to IPv4
+    if (ip === '::1' || ip === '::ffff:127.0.0.1') {
+        ip = '127.0.0.1';
+    }
+    
+    // Remove IPv6 prefix if present
+    if (ip.startsWith('::ffff:')) {
+        ip = ip.substring(7);
+    }
+    
+    return ip;
 };
 
 /**
@@ -27,13 +39,25 @@ const getClientIP = (req) => {
  */
 const detectServerSideBot = (req, userAgent) => {
     const headers = req.headers;
+    const ua = (userAgent || '').toLowerCase();
     
-    // Check for common bot headers
+    // Check for explicit bot patterns in user agent
+    const botPatterns = [
+        'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider', 'yandexbot',
+        'facebookexternalhit', 'twitterbot', 'linkedinbot', 'whatsapp', 'telegram',
+        'crawler', 'spider', 'scraper', 'wget', 'curl', 'ahrefsbot'
+    ];
+    
+    for (const pattern of botPatterns) {
+        if (ua.includes(pattern)) {
+            return { bot: 1, bot_reason: `Bot detected: ${pattern}` };
+        }
+    }
+    
+    // Check for suspicious bot indicators (but be less aggressive)
     if (headers['x-forwarded-for']?.includes('googlebot') ||
-        headers['user-agent']?.toLowerCase().includes('bot') ||
-        !headers['accept'] ||
-        !headers['accept-language']) {
-        return { bot: 1, bot_reason: 'Server-side bot detection' };
+        (!userAgent || userAgent.length < 10)) {
+        return { bot: 1, bot_reason: 'Suspicious bot indicators' };
     }
     
     return { bot: 0, bot_reason: '' };
@@ -57,50 +81,50 @@ const enrichTrackingData = (data, req) => {
         const enrichedData = {
             // Core tracking data
             timestamp: data.timestamp,
-            action: data.action || 'page_hit',
-            version: data.version || '1',
-            session_id: data.session_id,
-            client_id: data.client_id || 0,
-            visitor_id: data.visitor_id || 0,
-            site_id: data.site_id || '',
-            hostname: data.hostname || '',
-            path: data.path || '',
-            title: data.title || '',
-            language: data.language || 'en',
-            country_code: (data.country_code || '').slice(0, 2), // Ensure max 2 chars for FixedString(2)
-            region: data.region || '',
-            city: data.city || '',
-            referrer: data.referrer || '',
-            referrer_name: data.referrer_name || '',
-            referrer_icon: data.referrer_icon || '',
-            os: data.os || '',
-            os_version: data.os_version || '',
-            browser: data.browser || '',
-            browser_version: data.browser_version || '',
-            desktop: data.desktop || 0,
-            mobile: data.mobile || 0,
-            screen_class: data.screen_class || '',
-            utm_source: data.utm_source || '',
-            utm_medium: data.utm_medium || '',
-            utm_campaign: data.utm_campaign || '',
-            utm_content: data.utm_content || '',
-            utm_term: data.utm_term || '',
-            channel: data.channel || 'Direct',
-            duration_seconds: data.duration_seconds || 0,
+            action: String(data.action || 'page_hit'),
+            version: String(data.version || '1'),
+            session_id: String(data.session_id),
+            client_id: parseInt(data.client_id) || 0,
+            visitor_id: parseInt(data.visitor_id) || 0,
+            site_id: String(data.site_id || ''),
+            hostname: String(data.hostname || ''),
+            path: String(data.path || ''),
+            title: String(data.title || ''),
+            language: String(data.language || 'en'),
+            country_code: String(data.country_code || '').slice(0, 2), // Ensure max 2 chars for FixedString(2)
+            region: String(data.region || ''),
+            city: String(data.city || ''),
+            referrer: String(data.referrer || ''),
+            referrer_name: String(data.referrer_name || ''),
+            referrer_icon: String(data.referrer_icon || ''),
+            os: String(data.os || ''),
+            os_version: String(data.os_version || ''),
+            browser: String(data.browser || ''),
+            browser_version: String(data.browser_version || ''),
+            desktop: parseInt(data.desktop) || 0,
+            mobile: parseInt(data.mobile) || 0,
+            screen_class: String(data.screen_class || ''),
+            utm_source: String(data.utm_source || ''),
+            utm_medium: String(data.utm_medium || ''),
+            utm_campaign: String(data.utm_campaign || ''),
+            utm_content: String(data.utm_content || ''),
+            utm_term: String(data.utm_term || ''),
+            channel: String(data.channel || 'Direct'),
+            duration_seconds: parseInt(data.duration_seconds) || 0,
             
             // Event fields (with defaults for non-event tracking)
-            event_name: data.event_name || '',
-            event_meta_keys: data.event_meta_keys || [],
-            event_meta_values: data.event_meta_values || [],
-            tag_keys: data.tag_keys || [],
-            tag_values: data.tag_values || [],
+            event_name: String(data.event_name || ''),
+            event_meta_keys: Array.isArray(data.event_meta_keys) ? data.event_meta_keys : [],
+            event_meta_values: Array.isArray(data.event_meta_values) ? data.event_meta_values : [],
+            tag_keys: Array.isArray(data.tag_keys) ? data.tag_keys : [],
+            tag_values: Array.isArray(data.tag_values) ? data.tag_values : [],
             
             // Technical fields
-            user_agent: data.user_agent || '',
-            ip: clientIP,
-            bot: serverBotInfo.bot || data.bot || 0,
-            bot_reason: serverBotInfo.bot_reason || data.bot_reason || '',
-            payload: data.payload || '',
+            user_agent: String(data.user_agent || ''),
+            ip: String(clientIP),
+            bot: parseInt(serverBotInfo.bot || data.bot || 0),
+            bot_reason: String(serverBotInfo.bot_reason || data.bot_reason || ''),
+            payload: String(data.payload || ''),
             server_timestamp: new Date().toISOString()
         };
         
@@ -128,9 +152,12 @@ const _postEvent = async (event, req) => {
     
     // Use the correct regional endpoint from environment
     const tinybirdHost = process.env.TINYBIRD_HOST || process.env.NEXT_PUBLIC_TINYBIRD_HOST || 'https://api.tinybird.co';
-    const response = await fetch(`${tinybirdHost}/v0/events?name=${DATASOURCE}`, options);
+    const response = await fetch(`${tinybirdHost}/v0/datasources?name=${DATASOURCE}&mode=append&format=ndjson`, options);
+    
     if (!response.ok) {
-        throw new Error(`Tinybird error: ${response.statusText}`);
+        const errorText = await response.text();
+        console.log('Tinybird error response:', errorText);
+        throw new Error(`Tinybird error: ${response.statusText} - ${errorText}`);
     }
 
     return response.json();

@@ -18,9 +18,11 @@ SCHEMA >
     `utm_source` SimpleAggregateFunction(any, String),
     `utm_medium` SimpleAggregateFunction(any, String),
     `utm_campaign` SimpleAggregateFunction(any, String),
-    `entry_page` SimpleAggregateFunction(min, String),
-    `exit_page` SimpleAggregateFunction(max, String),
-    `entry_title` SimpleAggregateFunction(any, String),
+    `entry_page` AggregateFunction(argMin, String, DateTime),
+    `exit_page` AggregateFunction(argMax, String, DateTime),
+    `entry_title` AggregateFunction(argMin, String, DateTime),
+    `exit_title` AggregateFunction(argMax, String, DateTime),
+    `start` SimpleAggregateFunction(min, DateTime),
     `first_hit` SimpleAggregateFunction(min, DateTime),
     `latest_hit` SimpleAggregateFunction(max, DateTime),
     `total_duration` AggregateFunction(sum, UInt32),
@@ -30,3 +32,8 @@ SCHEMA >
 ENGINE AggregatingMergeTree
 ENGINE_PARTITION_KEY toYYYYMM(date)
 ENGINE_SORTING_KEY date, session_id
+
+FORWARD_QUERY >
+    SELECT *
+
+

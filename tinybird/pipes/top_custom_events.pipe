@@ -13,7 +13,7 @@ SQL >
     %
     select 
         event_name, 
-        uniq(visitor_id) as unique_users,
+        uniq(coalesce(visitor_id, 0)) as unique_users,
         count() as event_count,
         avg(duration_seconds) as avg_duration_seconds
     from analytics_custom_events

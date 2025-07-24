@@ -10,8 +10,8 @@ DESCRIPTION >
 SQL >
     SELECT
         timestamp,
-        client_id,
-        visitor_id,
+        coalesce(client_id, 0) as client_id,
+        coalesce(visitor_id, 0) as visitor_id,
         session_id,
         duration_seconds,
         hostname,
@@ -41,7 +41,7 @@ SQL >
         tag_values,
         user_agent,
         lower(user_agent) as user_agent_lower
-    FROM analytics_events_new
+    FROM analytics_events_api
     WHERE action = 'page_hit'
       AND bot = 0
 

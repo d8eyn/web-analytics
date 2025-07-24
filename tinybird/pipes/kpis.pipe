@@ -85,11 +85,11 @@ SQL >
         select
             date,
             session_id,
-            uniq(session_id) as visits,
+            count() as visits,
             countMerge(page_views) as pageviews,
-            case when min(first_hit) = max(latest_hit) then 1 else 0 end as is_bounce,
-            max(latest_hit) as latest_hit_aux,
-            min(first_hit) as first_hit_aux
+            case when any(first_hit) = any(latest_hit) then 1 else 0 end as is_bounce,
+            any(latest_hit) as latest_hit_aux,
+            any(first_hit) as first_hit_aux
         from analytics_sessions_mv
         where
             {% if defined(date_from) %} date >= {{ Date(date_from) }}
@@ -108,7 +108,7 @@ DESCRIPTION >
 SQL >
     select
         date,
-        uniq(session_id) as visits,
+        count() as visits,
         sum(pageviews) as pageviews,
         sum(case when latest_hit_aux = first_hit_aux then 1 end) / visits as bounce_rate,
         avg(latest_hit_aux - first_hit_aux) as avg_session_sec

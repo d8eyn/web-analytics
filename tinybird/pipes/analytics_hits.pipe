@@ -50,7 +50,7 @@ SQL >
         coalesce(bot_reason, '') as bot_reason,
         JSONExtractString(payload, 'href') as href,
         domainWithoutWWW(JSONExtractString(payload, 'href')) as current_domain
-    FROM analytics_events_new
+    FROM analytics_events_api
     WHERE action = 'page_hit'
 
 NODE enriched_hits

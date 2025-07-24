@@ -1,21 +1,25 @@
-NODE analytics_pages_1
 DESCRIPTION >
-    Aggregate page data with comprehensive tracking metrics
+    Aggregate traffic sources data with comprehensive attribution metrics from analytics_events_api
+
+TOKEN "dashboard" READ
+
+NODE sources_aggregation
+DESCRIPTION >
+    Aggregate traffic sources by date and dimensions
 
 SQL >
     SELECT
         toDate(timestamp) AS date,
         hostname,
-        coalesce(path, JSONExtractString(payload, 'pathname')) as pathname,
-        any(coalesce(title, JSONExtractString(payload, 'title'))) AS title,
         'desktop' as device,
-        any('chrome') as browser,
-        any('Unknown') as os,
+        any(coalesce(browser, '')) as browser,
+        any(coalesce(os, '')) as os,
         any(coalesce(country_code, '')) AS country_code,
         any(coalesce(region, '')) as region,
-        any(coalesce(city, '')) as city,
-        any(coalesce(channel, 'Direct')) as channel,
-        any(coalesce(utm_source, '')) as utm_source,
+        channel,
+        referrer,
+        any(coalesce(referrer_name, '')) as referrer_name,
+        utm_source,
         any(coalesce(utm_medium, '')) as utm_medium,
         any(coalesce(utm_campaign, '')) as utm_campaign,
         any(coalesce(utm_content, '')) as utm_content,
@@ -31,7 +35,7 @@ SQL >
       AND session_id != '0' 
       AND session_id != ''
     GROUP BY 
-        date, hostname, pathname
+        date, hostname, channel, referrer, utm_source
 
 TYPE MATERIALIZED
-DATASOURCE analytics_pages_mv
+DATASOURCE analytics_sources_mv_new 

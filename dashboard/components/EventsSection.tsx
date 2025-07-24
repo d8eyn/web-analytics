@@ -1,26 +1,44 @@
-import TabbedWidget, { Tab } from './TabbedWidget'
+import { BarList } from '@tinybirdco/charts';
+import { Card } from '@tremor/react';
+import InView from './InView';
+import useDateFilter from '../lib/hooks/use-date-filter';
+import { getConfig } from '../lib/api';
+import { useRouter } from 'next/router';
 
-interface EventsSectionProps {
-  height: number
+function buildEndpointUrl(host: string, endpoint: string) {
+  const apiUrl =
+    {
+      'https://ui.tinybird.co': 'https://api.tinybird.co',
+      'https://ui.us-east.tinybird.co': 'https://api.us-east.tinybird.co',
+    }[host] ?? host;
+
+  return `${apiUrl}/v0/pipes/${endpoint}.json`;
 }
 
-export default function EventsSection({ height }: EventsSectionProps) {
-  const tabs: Tab[] = [
-    {
-      id: 'events',
-      label: 'Events',
-      endpoint: 'top_custom_events',
-      index: 'event_name',
-      categories: ['unique_users', 'event_count'],
-    },
-    {
-      id: 'tags',
-      label: 'Tags',
-      endpoint: 'top_custom_events',
-      index: 'event_name',
-      categories: ['unique_users', 'event_count'],
-    },
-  ]
+export function EventsSection() {
+  const { query } = useRouter();
+  const { host } = getConfig(typeof query === 'string' ? query : undefined);
+  const { startDate, endDate } = useDateFilter();
 
-  return <TabbedWidget title="Events" tabs={tabs} height={height} />
+  const params = {
+    date_from: startDate,
+    date_to: endDate,
+    limit: 8,
+  };
+
+  return (
+    <Card className="p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-6">Events</h3>
+      <InView height={400}>
+        <BarList
+          endpoint={buildEndpointUrl(host, 'top_custom_events')}
+          index="event_name"
+          categories={['total_events']}
+          title="Top Custom Events"
+          params={params}
+          height={400}
+        />
+      </InView>
+    </Card>
+  );
 } 

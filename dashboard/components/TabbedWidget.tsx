@@ -1,88 +1,47 @@
-import { useState } from 'react'
-import { BarList } from '@tinybirdco/charts'
-import InView from './InView'
-import useDateFilter from '../lib/hooks/use-date-filter'
-import { getConfig } from '../lib/api'
-import { useRouter } from 'next/router'
-import useDomain from '../lib/hooks/use-domain'
+import { useState } from 'react';
+import { Card } from '@tremor/react';
 
-export interface Tab {
-  id: string
-  label: string
-  endpoint: string
-  index: string
-  categories: string[]
-  renderBarContent?: (item: any) => React.ReactNode
+interface Tab {
+  name: string;
+  content: React.ReactNode;
 }
 
 interface TabbedWidgetProps {
-  title: string
-  tabs: Tab[]
-  height: number
-  limit?: number
+  title: string;
+  tabs: Tab[];
+  className?: string;
 }
 
-function buildEndpointUrl(host: string, endpoint: string) {
-  const apiUrl =
-    {
-      'https://ui.tinybird.co': 'https://api.tinybird.co',
-      'https://ui.us-east.tinybird.co': 'https://api.us-east.tinybird.co',
-    }[host] ?? host
-
-  return `${apiUrl}/v0/pipes/${endpoint}.json`
-}
-
-export default function TabbedWidget({ title, tabs, height, limit = 8 }: TabbedWidgetProps) {
-  const [activeTab, setActiveTab] = useState(tabs[0]?.id)
-  const { query } = useRouter()
-  const { host } = getConfig(typeof query === 'string' ? query : undefined)
-  const { startDate, endDate } = useDateFilter()
-  const { domain } = useDomain()
-
-  const activeTabData = tabs.find(tab => tab.id === activeTab)
-
-  if (!activeTabData) return null
-
-  const endpointUrl = buildEndpointUrl(host, activeTabData.endpoint)
+export function TabbedWidget({ title, tabs, className = '' }: TabbedWidgetProps) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200">
-      <div className="border-b border-gray-200">
-        <nav className="flex space-x-8 px-6" aria-label="Tabs">
-          {tabs.map((tab) => (
+    <Card className={`${className}`}>
+      <div className="p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">{title}</h3>
+        
+        {/* Tab Navigation */}
+        <nav className="flex space-x-8 border-b border-gray-200" aria-label="Tabs">
+          {tabs.map((tab, index) => (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              key={index}
+              onClick={() => setSelectedIndex(index)}
               className={`${
-                activeTab === tab.id
-                  ? 'border-primary text-primary'
+                selectedIndex === index
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
             >
-              {tab.label}
+              {tab.name}
             </button>
           ))}
         </nav>
+        
+        {/* Tab Content */}
+        <div className="mt-6">
+          {tabs[selectedIndex]?.content}
+        </div>
       </div>
-      <div className="p-0">
-        <InView height={height}>
-          <BarList
-            endpoint={endpointUrl}
-            index={activeTabData.index}
-            categories={activeTabData.categories}
-            title={title}
-            params={{
-              limit,
-              date_from: startDate,
-              date_to: endDate,
-            }}
-            height={height}
-            indexConfig={{
-              renderBarContent: activeTabData.renderBarContent || ((item: any) => item.label || 'Unknown'),
-            }}
-          />
-        </InView>
-      </div>
-    </div>
-  )
+    </Card>
+  );
 } 

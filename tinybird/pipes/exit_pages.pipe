@@ -11,12 +11,12 @@ DESCRIPTION >
 
 SQL >
     %
-    select 
-        exit_page as pathname, 
-        uniq(session_id) as visits, 
+    SELECT 
+        argMaxMerge(exit_page) as pathname,
+        count() as visits,
         countMerge(page_views) as hits
-    from analytics_sessions_mv
-    where
+    FROM analytics_sessions_mv
+    WHERE
         {% if defined(date_from) %}
             date
             >=
@@ -29,8 +29,8 @@ SQL >
             {{ Date(date_to, description="Finishing day for filtering a date range", required=False) }}
         {% else %} and date <= today()
         {% end %}
-        and exit_page != ''
-    group by exit_page
+    GROUP BY exit_page
+    HAVING pathname != ''
     order by visits desc
     limit {{ Int32(skip, 0) }},{{ Int32(limit, 50) }}
 

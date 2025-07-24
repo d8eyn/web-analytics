@@ -10,8 +10,8 @@ DESCRIPTION >
 SQL >
     SELECT
         timestamp,
-        client_id,
-        visitor_id,
+        coalesce(client_id, 0) as client_id,
+        coalesce(visitor_id, 0) as visitor_id,
         hostname,
         path,
         event_name,
@@ -23,7 +23,7 @@ SQL >
         ip,
         bot,
         bot_reason
-    FROM analytics_events_new
+    FROM analytics_events_api
     WHERE 1=1
 
 NODE requests_enriched  

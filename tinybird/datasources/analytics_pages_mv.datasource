@@ -28,3 +28,6 @@ SCHEMA >
 ENGINE AggregatingMergeTree
 ENGINE_PARTITION_KEY toYYYYMM(date)
 ENGINE_SORTING_KEY date, hostname, pathname, device, browser, country_code
+
+FORWARD_QUERY >
+    SELECT *
