@@ -1,0 +1,101 @@
+DESCRIPTION >
+    Query individual page view records with full filtering capabilities
+    Provides granular drill-down analysis alongside aggregated data
+
+TOKEN "dashboard" READ
+
+NODE endpoint
+DESCRIPTION >
+    Get detailed page view records with comprehensive filtering
+
+SQL >
+    %
+    SELECT
+        timestamp,
+        session_id,
+        client_id,
+        visitor_id,
+        hostname,
+        path,
+        title,
+        language,
+        country_code,
+        region,
+        city,
+        referrer,
+        referrer_name,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        utm_content,
+        utm_term,
+        duration_seconds,
+        device,
+        browser,
+        os,
+        channel,
+        tag_keys,
+        tag_values
+    FROM analytics_page_views_detailed
+    WHERE 1=1
+    {% if defined(hostname) %}
+      AND hostname IN {{ Array(hostname, 'String') }}
+    {% end %}
+    {% if defined(path) %}
+      AND path IN {{ Array(path, 'String') }}
+    {% end %}
+    {% if defined(referrer) %}
+      AND referrer IN {{ Array(referrer, 'String') }}
+    {% end %}
+    {% if defined(referrer_name) %}
+      AND referrer_name IN {{ Array(referrer_name, 'String') }}
+    {% end %}
+    {% if defined(utm_source) %}
+      AND utm_source IN {{ Array(utm_source, 'String') }}
+    {% end %}
+    {% if defined(utm_medium) %}
+      AND utm_medium IN {{ Array(utm_medium, 'String') }}
+    {% end %}
+    {% if defined(utm_campaign) %}
+      AND utm_campaign IN {{ Array(utm_campaign, 'String') }}
+    {% end %}
+    {% if defined(utm_content) %}
+      AND utm_content IN {{ Array(utm_content, 'String') }}
+    {% end %}
+    {% if defined(utm_term) %}
+      AND utm_term IN {{ Array(utm_term, 'String') }}
+    {% end %}
+    {% if defined(country_code) %}
+      AND country_code IN {{ Array(country_code, 'String') }}
+    {% end %}
+    {% if defined(region) %}
+      AND region IN {{ Array(region, 'String') }}
+    {% end %}
+    {% if defined(city) %}
+      AND city IN {{ Array(city, 'String') }}
+    {% end %}
+    {% if defined(language) %}
+      AND language IN {{ Array(language, 'String') }}
+    {% end %}
+    {% if defined(browser) %}
+      AND browser IN {{ Array(browser, 'String') }}
+    {% end %}
+    {% if defined(os) %}
+      AND os IN {{ Array(os, 'String') }}
+    {% end %}
+    {% if defined(device) %}
+      AND device IN {{ Array(device, 'String') }}
+    {% end %}
+    {% if defined(channel) %}
+      AND channel IN {{ Array(channel, 'String') }}
+    {% end %}
+    {% if defined(date_from) %}
+      AND toDate(timestamp) >= {{ Date(date_from, description="Start date") }}
+    {% end %}
+    {% if defined(date_to) %}
+      AND toDate(timestamp) <= {{ Date(date_to, description="End date") }}
+    {% end %}
+    ORDER BY timestamp DESC
+    LIMIT {{ Int32(limit, 1000, description="Maximum number of rows to return") }}
+
+TYPE endpoint 

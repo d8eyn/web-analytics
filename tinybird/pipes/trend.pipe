@@ -1,6 +1,7 @@
 DESCRIPTION >
     Real-time user activity over the last 30 minutes, grouped by time intervals.
     Shows visitors activity for the trend chart.
+    Requires `site_id` parameter for multi-tenant data filtering.
 
 TOKEN "dashboard" READ
 
@@ -9,6 +10,7 @@ DESCRIPTION >
     Get visitor counts in 5-minute intervals for the last 30 minutes
 
 SQL >
+    %
     SELECT 
         toStartOfInterval(timestamp, toIntervalMinute(5)) as t,
         uniq(session_id) as visits
@@ -17,6 +19,7 @@ SQL >
       AND timestamp <= now()
       AND session_id != '0'
       AND session_id != ''
+      {% if defined(site_id) %} AND site_id = {{ String(site_id, description="Site ID for multi-tenant filtering", required=True) }}{% end %}
     GROUP BY t
     ORDER BY t
     

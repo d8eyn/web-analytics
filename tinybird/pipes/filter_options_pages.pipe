@@ -1,0 +1,27 @@
+DESCRIPTION >
+    Returns distinct page paths available for filtering.
+    Supports search parameter to filter results.
+    Requires `site_id` parameter for multi-tenant data filtering.
+
+TOKEN "dashboard" READ
+
+NODE endpoint
+DESCRIPTION >
+    Get distinct page paths with visitor counts
+
+SQL >
+    %
+    SELECT 
+        path as value,
+        count(DISTINCT visitor_id) as count
+    FROM analytics_hits 
+    WHERE toDate(timestamp) >= toDate({{ Date(date_from) }})
+        AND toDate(timestamp) <= toDate({{ Date(date_to) }})
+        {% if defined(site_id) %} AND site_id = {{ String(site_id, description="Site ID for multi-tenant filtering", required=True) }}{% end %}
+        {% if defined(search) %} AND path ILIKE {{ String(search, description="Search term to filter page paths") }}{% end %}
+        AND path != ''
+    GROUP BY path
+    ORDER BY count DESC, path ASC
+    LIMIT 200
+
+TYPE endpoint 

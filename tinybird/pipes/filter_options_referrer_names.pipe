@@ -1,0 +1,27 @@
+DESCRIPTION >
+    Returns distinct referrer names available for filtering.
+    Supports search parameter to filter results.
+    Requires `site_id` parameter for multi-tenant data filtering.
+
+TOKEN "dashboard" READ
+
+NODE endpoint
+DESCRIPTION >
+    Get distinct referrer names with visitor counts
+
+SQL >
+    %
+    SELECT 
+        referrer_name as value,
+        count(DISTINCT visitor_id) as count
+    FROM analytics_hits 
+    WHERE toDate(timestamp) >= toDate({{ Date(date_from) }})
+        AND toDate(timestamp) <= toDate({{ Date(date_to) }})
+        {% if defined(site_id) %} AND site_id = {{ String(site_id, description="Site ID for multi-tenant filtering", required=True) }}{% end %}
+        {% if defined(search) %} AND referrer_name ILIKE {{ String(search, description="Search term to filter referrer names") }}{% end %}
+        AND referrer_name != ''
+    GROUP BY referrer_name
+    ORDER BY count DESC, referrer_name ASC
+    LIMIT 200
+
+TYPE endpoint 

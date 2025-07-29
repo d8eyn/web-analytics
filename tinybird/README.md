@@ -691,3 +691,104 @@ When updating schema or adding new pipes:
 
 **Enterprise Analytics Platform** - Comprehensive web analytics with Tinybird
 *Real-time insights, privacy-first design, enterprise scale*
+
+# Tinybird Analytics Architecture
+
+This directory contains the Tinybird implementation for the web analytics system, providing real-time data processing and querying capabilities.
+
+## Overview
+
+The system uses a hybrid approach that combines:
+- **Optimized materialized views** for fast aggregated queries
+- **Detailed individual records** for granular drill-down analysis
+
+## Enhanced Architecture with Detailed Page Views
+
+### New Enhancement: Detailed Page Views Storage
+
+The system now includes **individual page view storage** alongside the existing optimized materialized views:
+
+#### **📊 Datasources**
+- `analytics_page_views_detailed` - Individual page view records with full enrichment
+- `analytics_pages_mv` - Aggregated page data (existing)
+- `analytics_sessions_mv` - Session-level aggregation (existing)
+- `analytics_sources_mv_new` - Traffic source aggregation (existing)
+- `analytics_custom_events` - Custom events (existing)
+
+#### **🔄 Processing**
+- `process_page_views_detailed` - Materializes individual page views from `analytics_hits`
+- Provides 90-day retention for detailed analysis
+- Filters out bots and invalid sessions
+
+#### **🎯 Query Capabilities**
+- `page_views_detailed` - Query individual page view records with comprehensive filtering
+- Supports all filters: hostname, path, geography, technology, traffic sources, UTM parameters
+- Configurable limits and date ranges
+- Real-time filtering on stored records
+
+### Benefits of This Approach
+
+#### **✅ Fast Aggregated Queries (Existing MVs)**
+- Pre-computed aggregations for dashboard widgets
+- Sub-second response times for summary data
+- Optimized storage and query performance
+
+#### **✅ Granular Analysis (New Detailed Storage)**
+- Individual page view records for drill-down analysis
+- Complete user journey reconstruction
+- Flexible filtering on any dimension
+- Raw data access for custom analysis
+
+### Usage Examples
+
+#### **Dashboard Widgets (Use existing MVs)**
+```sql
+-- Fast aggregated data
+SELECT uniqMerge(visits), countMerge(hits) 
+FROM analytics_pages_mv 
+WHERE date >= '2024-01-01'
+```
+
+#### **Detailed Analysis (Use new detailed storage)**
+```sql
+-- Individual page view records
+SELECT timestamp, visitor_id, path, duration_seconds, device
+FROM page_views_detailed
+WHERE path = '/pricing' 
+  AND device = 'mobile'
+  AND date_from = '2024-01-01'
+LIMIT 1000
+```
+
+#### **User Journey Analysis**
+```sql
+-- Reconstruct complete user sessions
+SELECT visitor_id, session_id, path, timestamp, title
+FROM page_views_detailed 
+WHERE visitor_id = 123456
+ORDER BY timestamp
+```
+
+### Implementation Details
+
+#### **Storage Optimization**
+- **Materialized Views**: ~70% less storage, optimized for aggregations
+- **Detailed Storage**: Individual records, 90-day TTL
+- **Partitioning**: Monthly partitions for efficient querying
+- **Sampling**: Visitor-based sampling for large datasets
+
+#### **Query Patterns**
+- **Summary Data**: Use existing materialized view pipes (`dashboard_summary`, `top_pages`, etc.)
+- **Drill-down Analysis**: Use `page_views_detailed` pipe
+- **Custom Analysis**: Query `analytics_page_views_detailed` directly
+
+### Filter Support
+
+All filters work consistently across both aggregated and detailed views:
+- Geographic: `country_code`, `region`, `city`
+- Technology: `browser`, `os`, `device`
+- Traffic: `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`
+- Navigation: `hostname`, `path`, `referrer`, `referrer_name`
+- Behavioral: `language`, `channel`
+
+This hybrid architecture provides the best of both worlds - fast dashboard performance with flexible drill-down capabilities.

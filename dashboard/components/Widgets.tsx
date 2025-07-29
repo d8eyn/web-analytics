@@ -1,3 +1,5 @@
+'use client'
+
 import InView from './InView'
 import {
   AreaChart,
@@ -9,7 +11,7 @@ import {
   tinybirdBorderColor,
 } from '@tinybirdco/charts'
 import { fetcher, getConfig } from '../lib/api'
-import { useRouter } from 'next/router'
+import { useSearchParams } from 'next/navigation'
 import useDateFilter from '../lib/hooks/use-date-filter'
 import KpisTabs from './KpisTabs'
 import useKpis from '../lib/hooks/use-kpis'
@@ -22,6 +24,7 @@ import { ConversionGoals } from './ConversionGoals'
 import { EventsSection } from './EventsSection'
 import { LocationsSection } from './LocationsSection'
 import { TechnologySection } from './TechnologySection'
+import { FunnelSection } from './FunnelSection'
 
 const enum WidgetHeight {
   XLarge = 588,
@@ -31,7 +34,8 @@ const enum WidgetHeight {
 }
 
 export default function Widgets() {
-  const { query } = useRouter()
+  const searchParams = useSearchParams()
+  const query = searchParams.get('host') || undefined
   const { host, token } = getConfig(
     typeof query === 'string' ? query : undefined
   )
@@ -148,6 +152,11 @@ export default function Widgets() {
             {/* Technology Section (OS/Browsers/etc) */}
             <TechnologySection />
           </div>
+        </div>
+
+        {/* Funnel Analysis Section - Full Width at Bottom */}
+        <div className="mt-8">
+          <FunnelSection />
         </div>
       </div>
     </ChartProvider>

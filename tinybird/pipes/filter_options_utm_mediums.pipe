@@ -1,0 +1,27 @@
+DESCRIPTION >
+    Returns distinct UTM mediums available for filtering.
+    Supports search parameter to filter results.
+    Requires `site_id` parameter for multi-tenant data filtering.
+
+TOKEN "dashboard" READ
+
+NODE endpoint
+DESCRIPTION >
+    Get distinct UTM mediums with visitor counts
+
+SQL >
+    %
+    SELECT 
+        utm_medium as value,
+        count(DISTINCT visitor_id) as count
+    FROM analytics_hits 
+    WHERE toDate(timestamp) >= toDate({{ Date(date_from) }})
+        AND toDate(timestamp) <= toDate({{ Date(date_to) }})
+        {% if defined(site_id) %} AND site_id = {{ String(site_id, description="Site ID for multi-tenant filtering", required=True) }}{% end %}
+        {% if defined(search) %} AND utm_medium ILIKE {{ String(search, description="Search term to filter UTM mediums") }}{% end %}
+        AND utm_medium != ''
+    GROUP BY utm_medium
+    ORDER BY count DESC, utm_medium ASC
+    LIMIT 200
+
+TYPE endpoint 

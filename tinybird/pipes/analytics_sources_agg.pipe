@@ -10,6 +10,7 @@ DESCRIPTION >
 SQL >
     SELECT
         toDate(timestamp) AS date,
+        coalesce(site_id, '') AS site_id,
         hostname,
         'desktop' as device,
         any(coalesce(browser, '')) as browser,
@@ -35,7 +36,7 @@ SQL >
       AND session_id != '0' 
       AND session_id != ''
     GROUP BY 
-        date, hostname, channel, referrer, utm_source
+        date, site_id, hostname, channel, referrer, utm_source
 
 TYPE MATERIALIZED
 DATASOURCE analytics_sources_mv_new 

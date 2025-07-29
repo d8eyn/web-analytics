@@ -1,41 +1,46 @@
 import { parse, format, subDays } from 'date-fns'
-import { useRouter } from 'next/router'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { DateRangePickerValue } from '@tremor/react'
 import { DateFilter, dateFormat } from '../types/date-filter'
+
+// Simple date range type for internal use
+export type DateRangeValue = {
+  from: Date | undefined
+  to: Date | undefined
+}
 
 export default function useDateFilter() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [dateRangePickerValue, setDateRangePickerValue] =
-    useState<DateRangePickerValue>()
+    useState<DateRangeValue | undefined>()
 
   const setDateFilter = useCallback(
-    ([startDate, endDate, value]: DateRangePickerValue) => {
-      const lastDays = value ?? DateFilter.Custom
+    (value: DateRangeValue) => {
+      if (!value?.from || !value?.to) return
 
-      const searchParams = new URLSearchParams(window.location.search)
-      searchParams.set('last_days', lastDays)
+      const startDate = value.from
+      const endDate = value.to
+      const lastDays = DateFilter.Custom
+
+      const newSearchParams = new URLSearchParams(window.location.search)
+      newSearchParams.set('last_days', lastDays)
 
       if (lastDays === DateFilter.Custom && startDate && endDate) {
-        searchParams.set('start_date', format(startDate, dateFormat))
-        searchParams.set('end_date', format(endDate, dateFormat))
+        newSearchParams.set('start_date', format(startDate, dateFormat))
+        newSearchParams.set('end_date', format(endDate, dateFormat))
       } else {
-        searchParams.delete('start_date')
-        searchParams.delete('end_date')
+        newSearchParams.delete('start_date')
+        newSearchParams.delete('end_date')
       }
-      router.push(
-        {
-          query: searchParams.toString(),
-        },
-        undefined,
-        { scroll: false }
-      )
+      
+      const newUrl = `${window.location.pathname}?${newSearchParams.toString()}`
+      router.push(newUrl, { scroll: false })
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [router]
   )
 
-  const lastDaysParam = router.query.last_days as DateFilter
+  const lastDaysParam = searchParams.get('last_days') as DateFilter
   const lastDays: DateFilter =
     typeof lastDaysParam === 'string' &&
       Object.values(DateFilter).includes(lastDaysParam)
@@ -45,8 +50,8 @@ export default function useDateFilter() {
   const { startDate, endDate } = useMemo(() => {
     const today = new Date()
     if (lastDays === DateFilter.Custom) {
-      const startDateParam = router.query.start_date as string
-      const endDateParam = router.query.end_date as string
+      const startDateParam = searchParams.get('start_date')
+      const endDateParam = searchParams.get('end_date')
 
       const startDate =
         startDateParam ||
@@ -63,22 +68,21 @@ export default function useDateFilter() {
         : format(today, dateFormat)
 
     return { startDate, endDate }
-  }, [lastDays, router.query.start_date, router.query.end_date])
+  }, [lastDays, searchParams.get('start_date'), searchParams.get('end_date')])
 
   useEffect(() => {
-    setDateRangePickerValue([
-      parse(startDate, dateFormat, new Date()),
-      parse(endDate, dateFormat, new Date()),
-      lastDays === DateFilter.Custom ? null : lastDays,
-    ])
+    setDateRangePickerValue({
+      from: parse(startDate, dateFormat, new Date()),
+      to: parse(endDate, dateFormat, new Date()),
+    })
   }, [startDate, endDate, lastDays])
 
   const onDateRangePickerValueChange = useCallback(
-    ([startDate, endDate, value]: DateRangePickerValue) => {
-      if (startDate && endDate) {
-        setDateFilter([startDate, endDate, value])
+    (value: DateRangeValue | undefined) => {
+      if (value?.from && value?.to) {
+        setDateFilter(value)
       } else {
-        setDateRangePickerValue([startDate, endDate, value])
+        setDateRangePickerValue(value)
       }
     },
     [setDateFilter]

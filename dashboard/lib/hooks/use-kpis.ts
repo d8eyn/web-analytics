@@ -1,4 +1,4 @@
-import { useRouter } from 'next/router'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 
 import { queryPipe } from '../api'
@@ -6,17 +6,19 @@ import { KpisData, KpiType, isKpi, KPI_OPTIONS } from '../types/kpis'
 import useDateFilter from './use-date-filter'
 import useQuery from './use-query'
 import { ChartValue } from '../types/charts'
+import { useFilters } from './use-filters'
+import { filtersToApiParams } from '../utils/filter-utils'
+import { useMemo } from 'react'
 
 const arrayHasCurrentDate = (dates: string[], isHourlyGranularity: boolean) => {
   const now = format(new Date(), isHourlyGranularity ? 'HH:mm' : 'MMM DD, yyyy')
   return dates[dates.length - 1] === now
 }
 
-async function getKpis(kpi: KpiType, date_from?: string, date_to?: string) {
-  const { data: queryData } = await queryPipe<KpisData>('kpis', {
-    date_from,
-    date_to,
-  })
+async function getKpis(kpi: KpiType, date_from?: string, date_to?: string, activeFilters?: any) {
+  const params = filtersToApiParams(activeFilters, date_from, date_to)
+  const { data: queryData } = await queryPipe<KpisData>('kpis', params)
+  
   const isHourlyGranularity = !!date_from && !!date_to && date_from === date_to
   const dates = queryData.map(({ date }) =>
     format(new Date(date), isHourlyGranularity ? 'HH:mm' : 'MMM DD, yyyy')
@@ -50,22 +52,24 @@ async function getKpis(kpi: KpiType, date_from?: string, date_to?: string) {
 
 export default function useKpis() {
   const { startDate, endDate } = useDateFilter()
+  const { activeFilters } = useFilters()
+  const searchParams = useSearchParams()
   const router = useRouter()
-  const { kpi: kpiParam } = router.query
-  const kpi = isKpi(kpiParam) ? kpiParam : 'visits'
+  const kpiParam = searchParams.get('kpi')
+  const kpi = (kpiParam && isKpi(kpiParam)) ? kpiParam : 'visits'
   const kpiOption = KPI_OPTIONS.find(({ value }) => value === kpi)!
-  const query = useQuery([kpi, startDate, endDate, 'kpis'], getKpis)
+  
+  // Create a cache key that includes filters
+  const cacheKey = useMemo(() => {
+    return [kpi, startDate, endDate, 'kpis', JSON.stringify(activeFilters)]
+  }, [kpi, startDate, endDate, activeFilters])
+  
+  const query = useQuery(cacheKey, () => getKpis(kpi, startDate, endDate, activeFilters))
 
   const setKpi = (kpi: KpiType) => {
-    const searchParams = new URLSearchParams(window.location.search)
-    searchParams.set('kpi', kpi)
-    router.push(
-      {
-        query: searchParams.toString(),
-      },
-      undefined,
-      { scroll: false }
-    )
+    const newSearchParams = new URLSearchParams(searchParams)
+    newSearchParams.set('kpi', kpi)
+    router.push(`?${newSearchParams.toString()}`, { scroll: false })
   }
 
   return {

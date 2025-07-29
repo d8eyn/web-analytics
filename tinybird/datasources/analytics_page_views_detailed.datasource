@@ -1,0 +1,48 @@
+DESCRIPTION >
+    Detailed page views data source - individual page view records with full enrichment
+    This provides granular drill-down capabilities alongside the optimized materialized views
+
+SCHEMA >
+    `timestamp` DateTime,
+    `action` String,
+    `version` String,
+    `session_id` String,
+    `client_id` UInt64,
+    `visitor_id` UInt64,
+    `site_id` String,
+    `hostname` String,
+    `path` String,
+    `title` String,
+    `language` LowCardinality(String),
+    `country_code` LowCardinality(FixedString(2)),
+    `region` String,
+    `city` String,
+    `referrer` String,
+    `referrer_name` String,
+    `referrer_icon` String,
+    `utm_source` String,
+    `utm_medium` String,
+    `utm_campaign` String,
+    `utm_content` String,
+    `utm_term` String,
+    `duration_seconds` UInt32,
+    `event_name` String,
+    `event_meta_keys` Array(String),
+    `event_meta_values` Array(String),
+    `tag_keys` Array(String),
+    `tag_values` Array(String),
+    `ip` String,
+    `bot` Int8,
+    `bot_reason` String,
+    `href` String,
+    `current_domain` String,
+    `device` LowCardinality(String),
+    `browser` LowCardinality(String),
+    `os` LowCardinality(String),
+    `channel` LowCardinality(String)
+
+ENGINE MergeTree
+ENGINE_PARTITION_KEY toYYYYMM(timestamp)
+ENGINE_SORTING_KEY timestamp, client_id, visitor_id, session_id
+ENGINE_TTL timestamp + toIntervalDay(90)
+ENGINE_SAMPLING_KEY visitor_id 

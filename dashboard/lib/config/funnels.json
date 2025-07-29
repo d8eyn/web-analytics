@@ -1,0 +1,319 @@
+{
+  "enhancedFunnels": [
+    {
+      "id": "reference-ecommerce-advanced",
+      "name": "Advanced E-commerce Purchase Flow",
+      "description": "Reference-style funnel with regex patterns, event metadata, and comprehensive filtering",
+      "enabled": true,
+      "sequenceMode": "ordered",
+      "timeWindow": 24,
+      "excludeBots": true,
+      "includeTitle": true,
+      "includeTimeOnPage": true,
+      "steps": [
+        {
+          "name": "Product Page Discovery",
+          "description": "User discovers any product page through various channels",
+          "pathRegex": ["(?i)^/product/[^/]+$"],
+          "language": ["en", "de", "fr"],
+          "utmSource": ["google", "bing", "social", "email"],
+          "platform": ["desktop", "mobile"],
+          "sequenceMode": "any",
+          "timeWindow": 1
+        },
+        {
+          "name": "Product Engagement",
+          "description": "User shows engagement with product",
+          "path": ["/product"],
+          "eventName": ["Add to Cart", "Add to Wishlist", "Product View"],
+          "eventMeta": {
+            "engagement": "high"
+          },
+          "country": ["US", "CA", "GB", "DE"],
+          "timeWindow": 2
+        },
+        {
+          "name": "Checkout Initiation",
+          "description": "User begins checkout process",
+          "pathPattern": ["/checkout%", "/cart%"],
+          "eventName": ["Checkout Started", "Begin Checkout"],
+          "browser": ["Chrome", "Safari", "Firefox"],
+          "os": ["Windows", "macOS", "iOS", "Android"],
+          "timeWindow": 4
+        },
+        {
+          "name": "Purchase Completion",
+          "description": "User completes purchase transaction",
+          "eventName": ["Purchase", "Order Complete", "Payment Success"],
+          "eventMeta": {
+            "currency": "USD",
+            "method": "card"
+          },
+          "tags": {
+            "conversion": "purchase",
+            "revenue": "high"
+          },
+          "referrerName": ["Google", "Direct", "Email"],
+          "timeWindow": 1
+        }
+      ]
+    },
+    {
+      "id": "reference-signup-comprehensive",
+      "name": "Comprehensive User Signup Flow",
+      "description": "Advanced signup tracking with geographic, technology, and behavioral filters",
+      "enabled": true,
+      "sequenceMode": "ordered",
+      "timeWindow": 48,
+      "sample": 1000,
+      "steps": [
+        {
+          "name": "Landing Page Entry",
+          "description": "User enters through homepage or landing pages",
+          "path": ["/", "/landing", "/welcome"],
+          "pathRegex": ["(?i)^/landing/[^/]+$"],
+          "country": ["US", "CA", "GB", "AU", "DE"],
+          "utmMedium": ["organic", "paid", "social", "email"],
+          "channel": ["Search", "Social", "Direct", "Referral"]
+        },
+        {
+          "name": "Pricing Exploration",
+          "description": "User explores pricing and features",
+          "pathPattern": ["/pricing%", "/plans%", "/features%"],
+          "platform": ["desktop"],
+          "language": ["en"],
+          "referrerName": ["Google", "Bing", "Facebook", "LinkedIn"],
+          "timeWindow": 24
+        },
+        {
+          "name": "Signup Form Access",
+          "description": "User accesses signup form",
+          "pathRegex": ["(?i)^/signup.*$", "(?i)^/register.*$"],
+          "browser": ["Chrome", "Safari", "Edge"],
+          "os": ["Windows", "macOS"],
+          "utmSource": ["google", "facebook", "linkedin", "email"],
+          "timeWindow": 12
+        },
+        {
+          "name": "Account Creation",
+          "description": "User successfully creates account",
+          "eventName": ["signup", "account_created", "registration_complete"],
+          "eventMeta": {
+            "method": "email",
+            "verified": "true"
+          },
+          "tags": {
+            "conversion": "signup",
+            "value": "lead"
+          },
+          "hostname": ["app.domain.com", "dashboard.domain.com"],
+          "timeWindow": 1
+        }
+      ]
+    },
+    {
+      "id": "reference-content-engagement-advanced",
+      "name": "Advanced Content Engagement Funnel",
+      "description": "Multi-channel content engagement with detailed UTM and behavioral tracking",
+      "enabled": true,
+      "sequenceMode": "any",
+      "timeWindow": 72,
+      "includeTitle": true,
+      "steps": [
+        {
+          "name": "Content Discovery",
+          "description": "User discovers content through various channels",
+          "pathPattern": ["/blog%", "/articles%", "/resources%"],
+          "utmSource": ["google", "social", "email", "direct"],
+          "utmMedium": ["organic", "social", "email", "referral"],
+          "language": ["en", "es", "fr"],
+          "country": ["US", "GB", "CA", "AU", "DE", "FR", "ES"]
+        },
+        {
+          "name": "Deep Content Engagement",
+          "description": "User shows meaningful engagement with content",
+          "eventName": ["article_read", "content_engaged", "scroll_depth"],
+          "eventMeta": {
+            "read_time": "30",
+            "scroll_percent": "50"
+          },
+          "pathRegex": ["(?i)^/blog/[^/]+$", "(?i)^/articles/[^/]+$"],
+          "platform": ["desktop", "mobile"],
+          "timeWindow": 30
+        },
+        {
+          "name": "Social Sharing",
+          "description": "User shares content on social platforms",
+          "eventName": ["share", "social_share", "viral_action"],
+          "eventMeta": {
+            "platform": "twitter",
+            "type": "organic"
+          },
+          "utmCampaign": ["content-marketing", "viral", "social-share"],
+          "referrer": ["twitter.com", "facebook.com", "linkedin.com"],
+          "timeWindow": 24
+        },
+        {
+          "name": "Newsletter Conversion",
+          "description": "User subscribes to newsletter or content updates",
+          "eventName": ["newsletter_signup", "subscribe", "lead_capture"],
+          "eventMeta": {
+            "source": "content",
+            "type": "newsletter"
+          },
+          "tags": {
+            "conversion": "newsletter",
+            "lead_source": "content"
+          },
+          "utmMedium": ["organic", "social", "email"],
+          "timeWindow": 1
+        }
+      ]
+    },
+    {
+      "id": "reference-mobile-app-download",
+      "name": "Mobile App Download Funnel",
+      "description": "Track mobile app downloads with device and platform specific targeting",
+      "enabled": true,
+      "sequenceMode": "ordered",
+      "timeWindow": 12,
+      "steps": [
+        {
+          "name": "Mobile Landing",
+          "description": "User visits mobile-specific landing page",
+          "pathPattern": ["/mobile%", "/app%", "/download%"],
+          "platform": ["mobile"],
+          "os": ["iOS", "Android"],
+          "browser": ["Mobile Safari", "Chrome Mobile", "Samsung Browser"],
+          "screenClass": ["small", "medium"]
+        },
+        {
+          "name": "App Store Click",
+          "description": "User clicks app store download link",
+          "eventName": ["app_store_click", "download_intent"],
+          "eventMeta": {
+            "store": "ios",
+            "platform": "mobile"
+          },
+          "country": ["US", "CA", "GB", "AU"],
+          "timeWindow": 2
+        },
+        {
+          "name": "App Installation",
+          "description": "User successfully installs mobile app",
+          "eventName": ["app_install", "installation_complete"],
+          "eventMeta": {
+            "version": "1.0",
+            "source": "website"
+          },
+          "tags": {
+            "conversion": "install",
+            "platform": "mobile"
+          },
+          "timeWindow": 10
+        }
+      ]
+    }
+  ],
+  "legacyFunnels": [
+    {
+      "id": "simple-ecommerce",
+      "name": "Simple E-commerce Purchase Flow",
+      "description": "Basic funnel for backward compatibility",
+      "enabled": true,
+      "steps": [
+        {
+          "name": "Product Page View",
+          "description": "User visits any product page",
+          "pathPattern": ["/product%"]
+        },
+        {
+          "name": "Add to Cart",
+          "description": "User adds item to shopping cart",
+          "eventName": ["Add to Cart"]
+        },
+        {
+          "name": "Purchase Completed",
+          "description": "User completes purchase",
+          "eventName": ["Purchase"]
+        }
+      ]
+    }
+  ],
+  "funnelSettings": {
+    "maxSteps": 10,
+    "minSteps": 2,
+    "defaultTimeWindow": 24,
+    "refreshInterval": 120000,
+    "enableEnhancedFiltering": true,
+    "enableRegexPatterns": true,
+    "enableEventMetadata": true,
+    "enableCustomTags": true
+  },
+  "validationRules": {
+    "stepName": {
+      "required": true,
+      "maxLength": 100
+    },
+    "pathPattern": {
+      "pattern": "^[/].*",
+      "maxLength": 255
+    },
+    "pathRegex": {
+      "maxLength": 500,
+      "requiresEscape": true
+    },
+    "eventName": {
+      "maxLength": 100,
+      "allowedEvents": [
+        "signup",
+        "purchase", 
+        "download",
+        "form_submit",
+        "newsletter_signup",
+        "Add to Cart",
+        "article_read",
+        "video_play",
+        "contact_form",
+        "app_install",
+        "social_share",
+        "content_engaged",
+        "checkout_started",
+        "payment_success"
+      ]
+    },
+    "eventMeta": {
+      "maxKeys": 10,
+      "maxValueLength": 100
+    },
+    "filterArrays": {
+      "maxItems": 20
+    },
+    "timeWindow": {
+      "min": 0.1,
+      "max": 168,
+      "unit": "hours"
+    }
+  },
+  "examples": {
+    "referenceStyle": {
+      "description": "Examples matching the reference implementation patterns",
+      "pathRegex": "(?i)^/product.*$",
+      "eventMetadata": {
+        "amount": "89.90",
+        "currency": "USD"
+      },
+      "customTags": {
+        "currency": "USD",
+        "conversion": "purchase"
+      },
+      "multipleEvents": ["Add to Cart", "Purchase", "Order Complete"],
+      "geographicFiltering": ["US", "CA", "GB"],
+      "technologyFiltering": {
+        "os": ["Windows", "macOS", "iOS", "Android"],
+        "browser": ["Chrome", "Safari", "Firefox"],
+        "platform": ["desktop", "mobile"]
+      }
+    }
+  }
+} 

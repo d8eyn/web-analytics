@@ -17,10 +17,12 @@ export function getConfig(search?: string) {
   
   const token = config.authToken ?? searchParams.get('token')
   const host = config.host ?? searchParams.get('host')
+  const siteId = config.siteId ?? searchParams.get('site_id')
   
   return {
     token,
     host,
+    siteId,
   }
 }
 
@@ -76,17 +78,30 @@ export async function fetcher<T>(
   return data
 }
 
-export function queryPipe<T>(
-  name: string,
+export function queryPipe<T = any>(
+  pipe: string,
   params: Partial<PipeParams<T>> = {}
 ): Promise<QueryPipe<T>> {
+  const { siteId } = getConfig()
   const searchParams = new URLSearchParams()
+  
+  // Add site_id as a required parameter for all pipe queries
+  if (siteId) {
+    searchParams.set('site_id', siteId)
+  }
+  
   Object.entries(params).forEach(([key, value]) => {
     if (!value) return
-    searchParams.set(key, value)
+    
+    // Handle array parameters for filters
+    if (Array.isArray(value)) {
+      value.forEach(v => searchParams.append(key, v.toString()))
+    } else {
+      searchParams.set(key, value.toString())
+    }
   })
 
-  return client(`/pipes/${name}.json?${searchParams}`)
+  return client(`/pipes/${pipe}.json?${searchParams}`)
 }
 
 export function querySQL<T>(sql: string): Promise<QuerySQL<T>> {

@@ -1,18 +1,19 @@
-import { useRouter } from 'next/router'
+import { useSearchParams } from 'next/navigation'
 import { useAnalytics } from '../../components/Provider'
 import config from '../config'
 
 export default function useAuth() {
-  const router = useRouter()
+  const searchParams = useSearchParams()
 
   let token, host
   if (config.host && config.authToken) {
     token = config.authToken
     host = config.host
   } else {
-    const { token: tokenParam, host: hostParam } = router.query
-    token = typeof tokenParam === 'string' ? tokenParam : undefined
-    host = typeof hostParam === 'string' ? hostParam : undefined
+    const tokenParam = searchParams.get('token')
+    const hostParam = searchParams.get('host')
+    token = tokenParam || undefined
+    host = hostParam || undefined
   }
 
   const { error } = useAnalytics()

@@ -1,44 +1,30 @@
-import { BarList } from '@tinybirdco/charts';
-import { Card } from '@tremor/react';
-import InView from './InView';
-import useDateFilter from '../lib/hooks/use-date-filter';
-import { getConfig } from '../lib/api';
-import { useRouter } from 'next/router';
+'use client'
 
-function buildEndpointUrl(host: string, endpoint: string) {
-  const apiUrl =
-    {
-      'https://ui.tinybird.co': 'https://api.tinybird.co',
-      'https://ui.us-east.tinybird.co': 'https://api.us-east.tinybird.co',
-    }[host] ?? host;
-
-  return `${apiUrl}/v0/pipes/${endpoint}.json`;
-}
+import BarList from './BarList';
+import useDashboardData from '../lib/hooks/use-dashboard-data';
 
 export function EventsSection() {
-  const { query } = useRouter();
-  const { host } = getConfig(typeof query === 'string' ? query : undefined);
-  const { startDate, endDate } = useDateFilter();
+  const { summary, isLoading } = useDashboardData();
 
-  const params = {
-    date_from: startDate,
-    date_to: endDate,
-    limit: 8,
-  };
+  if (isLoading) {
+    return (
+      <div className="animate-pulse bg-gray-200 rounded-lg h-96"></div>
+    );
+  }
+
+  const topCustomEventsData = summary.getTopCustomEvents().map(event => ({
+    name: event.name,
+    hits: event.hits,
+  }));
 
   return (
-    <Card className="p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Events</h3>
-      <InView height={400}>
-        <BarList
-          endpoint={buildEndpointUrl(host, 'top_custom_events')}
-          index="event_name"
-          categories={['total_events']}
-          title="Top Custom Events"
-          params={params}
-          height={400}
-        />
-      </InView>
-    </Card>
+    <div className="h-96">
+      <BarList
+        data={topCustomEventsData}
+        index="name"
+        categories={['hits']}
+        title="Top Custom Events"
+      />
+    </div>
   );
 } 

@@ -1,0 +1,233 @@
+DESCRIPTION >
+    Consolidated dashboard trends endpoint that returns KPI trends and real-time data in a single API call.
+    Replaces multiple time-series pipe calls with one optimized query.
+    Accepts `date_from` and `date_to` date filter. Defaults to last 7 days.
+    Requires `site_id` parameter for multi-tenant data filtering.
+    Supports comprehensive filtering including hostname, path, geography, technology, traffic sources, UTM parameters, and events.
+
+TOKEN "dashboard" READ
+
+NODE timeseries
+DESCRIPTION >
+    Generate a timeseries for the specified time range, so we call fill empty data points.
+    Filters "future" data points.
+
+SQL >
+    %
+
+    {% set _single_day = defined(date_from) and day_diff(date_from, date_to) == 0 %}
+    with
+        {% if defined(date_from) %}
+            toStartOfDay(
+                toDate(
+                    {{
+                        Date(
+                            date_from,
+                            description="Starting day for filtering a date range",
+                            required=False,
+                        )
+                    }}
+                )
+            ) as start,
+        {% else %} toStartOfDay(timestampAdd(today(), interval -7 day)) as start,
+        {% end %}
+        {% if defined(date_to) %}
+            toStartOfDay(
+                toDate(
+                    {{
+                        Date(
+                            date_to,
+                            description="Finishing day for filtering a date range",
+                            required=False,
+                        )
+                    }}
+                )
+            ) as end
+        {% else %} toStartOfDay(today()) as end
+        {% end %}
+    {% if _single_day %}
+        select
+            arrayJoin(
+                arrayMap(
+                    x -> toDateTime(x),
+                    range(
+                        toUInt32(toDateTime(start)), toUInt32(timestampAdd(end, interval 1 day)), 3600
+                    )
+                )
+            ) as date
+    {% else %}
+        select
+            arrayJoin(
+                arrayMap(
+                    x -> toDate(x),
+                    range(toUInt32(start), toUInt32(timestampAdd(end, interval 1 day)), 24 * 3600)
+                )
+            ) as date
+    {% end %}
+    where date <= now()
+
+NODE hits
+DESCRIPTION >
+    Group by sessions and calculate metrics at that level
+
+SQL >
+    %
+
+
+    {% if defined(date_from) and day_diff(date_from, date_to) == 0 %}
+        select
+            toStartOfHour(timestamp) as date,
+            session_id,
+            uniq(session_id) as visits,
+            count() as pageviews,
+            case when min(timestamp) = max(timestamp) then 1 else 0 end as is_bounce,
+            max(timestamp) as latest_hit_aux,
+            min(timestamp) as first_hit_aux
+        from analytics_hits
+        where toDate(timestamp) = {{ Date(date_from) }}
+        {% if defined(site_id) %} and site_id = {{ String(site_id, description="Site ID for multi-tenant filtering", required=True) }}{% end %}
+        {% if defined(hostname) %} AND hostname IN ({{ Array(hostname, 'String', description="Filter by hostname", required=False) }}){% end %}
+        {% if defined(path) %} AND path IN ({{ Array(path, 'String', description="Filter by specific paths", required=False) }}){% end %}
+        {% if defined(country) %} AND country_code IN ({{ Array(country, 'String', description="Filter by country", required=False) }}){% end %}
+        {% if defined(region) %} AND region IN ({{ Array(region, 'String', description="Filter by region", required=False) }}){% end %}
+        {% if defined(city) %} AND city IN ({{ Array(city, 'String', description="Filter by city", required=False) }}){% end %}
+        {% if defined(language) %} AND language IN ({{ Array(language, 'String', description="Filter by language", required=False) }}){% end %}
+        {% if defined(browser) %} AND browser IN ({{ Array(browser, 'String', description="Filter by browser", required=False) }}){% end %}
+        {% if defined(os) %} AND os IN ({{ Array(os, 'String', description="Filter by operating system", required=False) }}){% end %}
+        {% if defined(platform) %} AND device IN ({{ Array(platform, 'String', description="Filter by platform/device", required=False) }}){% end %}
+        {% if defined(referrer) %} AND referrer IN ({{ Array(referrer, 'String', description="Filter by referrer", required=False) }}){% end %}
+        {% if defined(referrerName) %} AND referrer_name IN ({{ Array(referrerName, 'String', description="Filter by referrer name", required=False) }}){% end %}
+        {% if defined(utm_source) %} AND utm_source IN ({{ Array(utm_source, 'String', description="Filter by UTM source", required=False) }}){% end %}
+        {% if defined(utm_medium) %} AND utm_medium IN ({{ Array(utm_medium, 'String', description="Filter by UTM medium", required=False) }}){% end %}
+        {% if defined(utm_campaign) %} AND utm_campaign IN ({{ Array(utm_campaign, 'String', description="Filter by UTM campaign", required=False) }}){% end %}
+        {% if defined(utm_content) %} AND utm_content IN ({{ Array(utm_content, 'String', description="Filter by UTM content", required=False) }}){% end %}
+        {% if defined(utm_term) %} AND utm_term IN ({{ Array(utm_term, 'String', description="Filter by UTM term", required=False) }}){% end %}
+        group by toStartOfHour(timestamp), session_id
+    {% else %}
+        select
+            date,
+            session_id,
+            count() as visits,
+            countMerge(page_views) as pageviews,
+            case when any(first_hit) = any(latest_hit) then 1 else 0 end as is_bounce,
+            any(latest_hit) as latest_hit_aux,
+            any(first_hit) as first_hit_aux
+        from analytics_sessions_mv
+        where
+            {% if defined(date_from) %} date >= {{ Date(date_from) }}
+            {% else %} date >= timestampAdd(today(), interval -7 day)
+            {% end %}
+            {% if defined(date_to) %} and date <= {{ Date(date_to) }}
+            {% else %} and date <= today()
+            {% end %}
+            {% if defined(site_id) %} and site_id = {{ String(site_id, description="Site ID for multi-tenant filtering", required=True) }}{% end %}
+            {% if defined(hostname) %} AND hostname IN ({{ Array(hostname, 'String', description="Filter by hostname", required=False) }}){% end %}
+            {% if defined(path) %} AND session_id IN (
+                SELECT session_id 
+                FROM analytics_sessions_mv 
+                WHERE {% if defined(date_from) %} date >= {{ Date(date_from) }} {% else %} date >= timestampAdd(today(), interval -7 day) {% end %}
+                    {% if defined(date_to) %} AND date <= {{ Date(date_to) }} {% else %} AND date <= today() {% end %}
+                    {% if defined(site_id) %} AND site_id = {{ String(site_id, description="Site ID for multi-tenant filtering", required=True) }}{% end %}
+                GROUP BY session_id
+                HAVING (argMinMerge(entry_page) IN ({{ Array(path, 'String', description="Filter by specific paths", required=False) }}) 
+                        OR argMaxMerge(exit_page) IN ({{ Array(path, 'String', description="Filter by specific paths", required=False) }}))
+            ){% end %}
+            {% if defined(country) %} AND country IN ({{ Array(country, 'String', description="Filter by country", required=False) }}){% end %}
+            {% if defined(region) %} AND region IN ({{ Array(region, 'String', description="Filter by region", required=False) }}){% end %}
+            {% if defined(city) %} AND city IN ({{ Array(city, 'String', description="Filter by city", required=False) }}){% end %}
+            {% if defined(language) %} AND language IN ({{ Array(language, 'String', description="Filter by language", required=False) }}){% end %}
+            {% if defined(browser) %} AND browser IN ({{ Array(browser, 'String', description="Filter by browser", required=False) }}){% end %}
+            {% if defined(os) %} AND os IN ({{ Array(os, 'String', description="Filter by operating system", required=False) }}){% end %}
+            {% if defined(platform) %} AND device IN ({{ Array(platform, 'String', description="Filter by platform/device", required=False) }}){% end %}
+            {% if defined(referrer) %} AND referrer IN ({{ Array(referrer, 'String', description="Filter by referrer", required=False) }}){% end %}
+            {% if defined(referrerName) %} AND referrer_name IN ({{ Array(referrerName, 'String', description="Filter by referrer name", required=False) }}){% end %}
+            {% if defined(utm_source) %} AND utm_source IN ({{ Array(utm_source, 'String', description="Filter by UTM source", required=False) }}){% end %}
+            {% if defined(utm_medium) %} AND utm_medium IN ({{ Array(utm_medium, 'String', description="Filter by UTM medium", required=False) }}){% end %}
+            {% if defined(utm_campaign) %} AND utm_campaign IN ({{ Array(utm_campaign, 'String', description="Filter by UTM campaign", required=False) }}){% end %}
+            {% if defined(utm_content) %} AND utm_content IN ({{ Array(utm_content, 'String', description="Filter by UTM content", required=False) }}){% end %}
+            {% if defined(utm_term) %} AND utm_term IN ({{ Array(utm_term, 'String', description="Filter by UTM term", required=False) }}){% end %}
+        group by date, session_id
+    {% end %}
+
+NODE kpi_data
+DESCRIPTION >
+    General KPIs per date, works for both summary metrics and trends charts.
+
+SQL >
+    %
+
+    select
+        date,
+        count() as visits,
+        sum(pageviews) as pageviews,
+        sum(case when latest_hit_aux = first_hit_aux then 1 end) / visits as bounce_rate,
+        avg(latest_hit_aux - first_hit_aux) as avg_session_sec
+    from hits
+    group by date
+
+NODE realtime_trend
+DESCRIPTION >
+    Real-time visitor activity over the last 30 minutes
+
+SQL >
+    %
+
+
+    SELECT 
+        toStartOfInterval(timestamp, toIntervalMinute(5)) as t,
+        uniq(session_id) as visits
+    FROM analytics_hits
+    WHERE timestamp >= now() - toIntervalMinute(30)
+      AND timestamp <= now()
+      AND session_id != '0'
+      AND session_id != ''
+      {% if defined(site_id) %} AND site_id = {{ String(site_id, description="Site ID for multi-tenant filtering", required=True) }}{% end %}
+      {% if defined(hostname) %} AND hostname IN ({{ Array(hostname, 'String', description="Filter by hostname", required=False) }}){% end %}
+      {% if defined(path) %} AND path IN ({{ Array(path, 'String', description="Filter by specific paths", required=False) }}){% end %}
+      {% if defined(country) %} AND country_code IN ({{ Array(country, 'String', description="Filter by country", required=False) }}){% end %}
+      {% if defined(region) %} AND region IN ({{ Array(region, 'String', description="Filter by region", required=False) }}){% end %}
+      {% if defined(city) %} AND city IN ({{ Array(city, 'String', description="Filter by city", required=False) }}){% end %}
+      {% if defined(language) %} AND language IN ({{ Array(language, 'String', description="Filter by language", required=False) }}){% end %}
+      {% if defined(browser) %} AND browser IN ({{ Array(browser, 'String', description="Filter by browser", required=False) }}){% end %}
+      {% if defined(os) %} AND os IN ({{ Array(os, 'String', description="Filter by operating system", required=False) }}){% end %}
+      {% if defined(platform) %} AND device IN ({{ Array(platform, 'String', description="Filter by platform/device", required=False) }}){% end %}
+      {% if defined(referrer) %} AND referrer IN ({{ Array(referrer, 'String', description="Filter by referrer", required=False) }}){% end %}
+      {% if defined(referrerName) %} AND referrer_name IN ({{ Array(referrerName, 'String', description="Filter by referrer name", required=False) }}){% end %}
+      {% if defined(utm_source) %} AND utm_source IN ({{ Array(utm_source, 'String', description="Filter by UTM source", required=False) }}){% end %}
+      {% if defined(utm_medium) %} AND utm_medium IN ({{ Array(utm_medium, 'String', description="Filter by UTM medium", required=False) }}){% end %}
+      {% if defined(utm_campaign) %} AND utm_campaign IN ({{ Array(utm_campaign, 'String', description="Filter by UTM campaign", required=False) }}){% end %}
+      {% if defined(utm_content) %} AND utm_content IN ({{ Array(utm_content, 'String', description="Filter by UTM content", required=False) }}){% end %}
+      {% if defined(utm_term) %} AND utm_term IN ({{ Array(utm_term, 'String', description="Filter by UTM term", required=False) }}){% end %}
+    GROUP BY t
+    ORDER BY t
+
+NODE endpoint
+DESCRIPTION >
+    Combine KPI trends and real-time data with timeseries
+
+SQL >
+    %
+
+
+    SELECT 
+        'kpi_trends' as data_type,
+        toString(a.date) as date_key,
+        b.visits,
+        b.pageviews,
+        b.bounce_rate,
+        b.avg_session_sec
+    FROM timeseries a
+    LEFT JOIN kpi_data b USING date
+    
+    UNION ALL
+    
+    SELECT 
+        'realtime_trend' as data_type,
+        toString(t) as date_key,
+        visits,
+        0 as pageviews,
+        0 as bounce_rate,
+        0 as avg_session_sec
+    FROM realtime_trend
+
+TYPE endpoint 

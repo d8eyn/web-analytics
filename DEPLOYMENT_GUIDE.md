@@ -150,6 +150,121 @@ curl -X POST https://your-dashboard.vercel.app/api/track \
   -d '{"test": "data", "timestamp": "2024-01-01T00:00:00Z", "action": "page_view", "session_id": "test"}'
 ```
 
+## Multi-Tenant Deployment
+
+### For SaaS Applications
+
+If you're building a SaaS application where each customer needs isolated analytics:
+
+#### 1. Single Tinybird Project
+
+Deploy the tinybird data project once to handle all customers:
+
+```bash
+cd tinybird
+tb deploy --wait
+```
+
+#### 2. Customer-Specific Dashboards
+
+For each customer, deploy a separate dashboard instance with their unique site ID:
+
+```bash
+# Customer A
+export NEXT_PUBLIC_SITE_ID="customer-a-site-id"
+export NEXT_PUBLIC_TINYBIRD_HOST="https://api.tinybird.co"
+export NEXT_PUBLIC_TINYBIRD_AUTH_TOKEN="your_token"
+npm run build
+npm run start
+
+# Customer B  
+export NEXT_PUBLIC_SITE_ID="customer-b-site-id"
+export NEXT_PUBLIC_TINYBIRD_HOST="https://api.tinybird.co"
+export NEXT_PUBLIC_TINYBIRD_AUTH_TOKEN="your_token"
+npm run build
+npm run start
+```
+
+#### 3. Customer Tracking Scripts
+
+Provide each customer with a tracking script that includes their unique site ID:
+
+```html
+<!-- Customer A -->
+<script src="https://your-cdn.com/script.js" data-site-id="customer-a-site-id"></script>
+
+<!-- Customer B -->
+<script src="https://your-cdn.com/script.js" data-site-id="customer-b-site-id"></script>
+```
+
+#### 4. Data Isolation
+
+All data will be automatically isolated by site ID:
+- Each customer only sees their own analytics data
+- All tinybird pipes filter by the site_id parameter
+- No cross-customer data leakage
+
+## Query Optimization for Cost Reduction
+
+### Tinybird Pricing Impact
+
+Tinybird charges based on Queries Per Second (QPS) with overage fees. The original dashboard made 18+ separate API calls per page load, which could be expensive at scale.
+
+#### Before Optimization
+```
+Dashboard Load = 18+ API calls
+- kpis.pipe
+- trend.pipe  
+- top_pages.pipe
+- top_sources.pipe
+- top_browsers.pipe
+- top_os.pipe
+- top_devices.pipe
+- top_locations.pipe
+- top_regions.pipe
+- top_cities.pipe
+- top_languages.pipe
+- top_hostnames.pipe
+- top_channels.pipe
+- top_mediums.pipe
+- top_campaigns.pipe
+- top_custom_events.pipe
+- conversion_goals.pipe
+- entry_pages.pipe
+- exit_pages.pipe
+```
+
+#### After Optimization
+```
+Dashboard Load = 2 API calls
+- dashboard_summary.pipe (all widget data)
+- dashboard_trends.pipe (all time-series data)
+```
+
+### Cost Savings Example
+
+**Scenario**: 1000 dashboard page views per day
+
+| Approach | API Calls per Day | Monthly API Calls | Est. Monthly Cost |
+|----------|------------------|-------------------|-------------------|
+| Original | 18,000 | 540,000 | $XXX |
+| Optimized | 2,000 | 60,000 | $XX |
+| **Savings** | **90% reduction** | **480,000 fewer calls** | **~90% cost reduction** |
+
+### Implementation
+
+To use the optimized dashboard:
+
+```typescript
+// Replace this
+import Widgets from '../components/Widgets'
+
+// With this  
+import OptimizedWidgets from '../components/OptimizedWidgets'
+```
+
+The optimized components provide the same functionality with dramatically fewer API calls.
+
 ## ⚠️ Important Notes
 
 - **Files are directly in the dashboard project** - no symlinks or complex setup

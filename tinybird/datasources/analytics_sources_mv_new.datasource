@@ -3,6 +3,7 @@ DESCRIPTION >
 
 SCHEMA >
     `date` Date,
+    `site_id` String,
     `hostname` String,
     `device` String,
     `browser` String,
@@ -26,7 +27,7 @@ SCHEMA >
 
 ENGINE AggregatingMergeTree
 ENGINE_PARTITION_KEY toYYYYMM(date)
-ENGINE_SORTING_KEY date, hostname, channel, referrer, utm_source
+ENGINE_SORTING_KEY date, site_id, hostname, channel, referrer, utm_source
 
 FORWARD_QUERY >
-    SELECT *
+    SELECT date, defaultValueOfTypeName('String') AS site_id, hostname, device, browser, os, country_code, region, channel, referrer, referrer_name, utm_source, utm_medium, utm_campaign, utm_content, utm_term, language, screen_class, visits, hits, total_duration, bounces

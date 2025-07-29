@@ -1,84 +1,122 @@
-import { FormEvent, useState } from 'react'
-import { useRouter } from 'next/router'
-import { SelectBox, SelectBoxItem, TextInput, Button } from '@tremor/react'
+'use client'
 
-import { HostType } from '../../lib/types/credentials'
-import { OptionType } from '../../lib/types/options'
+import { useState } from 'react'
 
-const hostOptions: OptionType<HostType>[] = [
-  { text: HostType.Eu, value: HostType.Eu },
-  { text: HostType.Us, value: HostType.Us },
-  { text: 'Other', value: HostType.Other },
-]
+// Simple form components replacement
+function Select({ children, value, onValueChange, placeholder, className = '', ...props }: any) {
+  return (
+    <select 
+      value={value} 
+      onChange={(e) => onValueChange?.(e.target.value)}
+      className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${className}`}
+      {...props}
+    >
+      <option value="">{placeholder}</option>
+      {children}
+    </select>
+  )
+}
 
-export default function CredentialsForm() {
-  const router = useRouter()
-  const [hostType, setHostType] = useState<HostType>(hostOptions[0].value)
+function SelectItem({ value, children }: any) {
+  return <option value={value}>{children}</option>
+}
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+function TextInput({ value, onValueChange, placeholder, className = '', ...props }: any) {
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onValueChange?.(e.target.value)}
+      placeholder={placeholder}
+      className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${className}`}
+      {...props}
+    />
+  )
+}
 
-    const form = event.currentTarget
-    const formData = new FormData(form)
-    const credentials = Object.fromEntries(formData) as Record<string, string>
-    const { token, hostName } = credentials
-    if (!token || (hostType === HostType.Other && !hostName)) return
-    const host = hostType === HostType.Other ? hostName : hostType
-    const params = new URLSearchParams({ token, host })
-    router.push({ pathname: router.pathname, search: params.toString() })
+function Button({ children, onClick, className = '', variant = 'primary', disabled = false, ...props }: any) {
+  const baseClasses = 'px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+  const variantClasses = {
+    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
+    secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500'
+  }
+  
+  return (
+    <button 
+      onClick={onClick}
+      disabled={disabled}
+      className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  )
+}
+
+interface CredentialsFormProps {
+  onSubmit: (credentials: { host: string; token: string; siteId: string }) => void
+  loading?: boolean
+}
+
+export default function CredentialsForm({ onSubmit, loading = false }: CredentialsFormProps) {
+  const [host, setHost] = useState('')
+  const [token, setToken] = useState('')
+  const [siteId, setSiteId] = useState('')
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (host && token && siteId) {
+      onSubmit({ host, token, siteId })
+    }
   }
 
+  const isValid = host && token && siteId
+
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex flex-col justify-between h-full"
-      aria-labelledby="credentials-title"
-    >
-      <div className="space-y-10">
-        <div className="space-y-1">
-          <label className="block text-sm font-normal text-neutral-64">
-            Token
-          </label>
-          <TextInput
-            name="token"
-            placeholder="p.eyJ3kdsfk2395IjogImMzZTMwNDIxLTYwNzctNGZhMS1iMjY1LWQwM2JhZDIzZGRlOCIsICJpZCI6ICIwYmUzNTgzNi0zODAyLTQwMmUtOTUxZi0zOWFm"
-          />
-          <p className="text-xs text-secondaryLight">
-            Copy the token named dashboard generated with your web-analytics
-            project.
-          </p>
-        </div>
-        <div className="flex items-end gap-10">
-          <div className="flex-1">
-            <label className="block text-sm font-normal text-neutral-64 mb-1">
-              Host
-            </label>
-            <SelectBox
-              value={hostType}
-              onValueChange={value => setHostType(value as HostType)}
-            >
-              {hostOptions.map(({ text, value }) => (
-                <SelectBoxItem key={value} text={text} value={value} />
-              ))}
-            </SelectBox>
-          </div>
-          <div className="flex-1">
-            {hostType === HostType.Other && (
-              <>
-                <label className="block text-sm font-normal text-neutral-64 mb-1">
-                  Host name
-                </label>
-                <TextInput name="hostName" placeholder="Host name" />
-              </>
-            )}
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <Button type="submit" color="emerald">
-            View dashboard
-          </Button>
-        </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="host" className="block text-sm font-medium text-gray-700 mb-1">
+          Tinybird Host
+        </label>
+        <Select
+          value={host}
+          onValueChange={setHost}
+          placeholder="Select your region"
+        >
+          <SelectItem value="https://api.tinybird.co">Europe (api.tinybird.co)</SelectItem>
+          <SelectItem value="https://api.us-east.tinybird.co">US East (api.us-east.tinybird.co)</SelectItem>
+        </Select>
       </div>
+
+      <div>
+        <label htmlFor="token" className="block text-sm font-medium text-gray-700 mb-1">
+          API Token
+        </label>
+        <TextInput
+          value={token}
+          onValueChange={setToken}
+          placeholder="Enter your Tinybird API token"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="siteId" className="block text-sm font-medium text-gray-700 mb-1">
+          Site ID
+        </label>
+        <TextInput
+          value={siteId}
+          onValueChange={setSiteId}
+          placeholder="Enter your site ID"
+        />
+      </div>
+
+      <Button
+        type="submit"
+        disabled={!isValid || loading}
+        className="w-full"
+      >
+        {loading ? 'Connecting...' : 'Connect'}
+      </Button>
     </form>
   )
 }

@@ -1,28 +1,26 @@
 /* eslint-disable @next/next/no-img-element */
-import CurrentVisitors from './CurrentVisitors'
+import React from 'react'
 import DateFilter from './DateFilter'
-import useDomain from '../lib/hooks/use-domain'
+import FilterButton from './FilterButton'
+import FilterChips from './FilterChips'
+import CurrentVisitors from './CurrentVisitors'
 
 export default function Header() {
-  const { domain, logo, handleLogoError } = useDomain()
-
   return (
-    <header className="flex justify-between flex-col lg:flex-row gap-6">
-      <div className="flex gap-2 md:gap-10 justify-between md:justify-start">
-        <h1 className="flex items-center gap-2 min-w-max">
-          <img
-            src={logo}
-            alt=""
-            width={16}
-            height={16}
-            onError={handleLogoError}
-            loading="lazy"
-          />
-          <span className="text-lg leading-6">{domain}</span>
-        </h1>
-        <CurrentVisitors />
+    <div className="border-b border-neutral-12 pb-6 mb-10">
+      <div className="flex flex-col gap-4">
+        {/* Top row with date filter and filter button */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <DateFilter />
+            <FilterButton />
+          </div>
+          <CurrentVisitors />
+        </div>
+        
+        {/* Filter chips row */}
+        <FilterChips className="min-h-[32px]" />
       </div>
-      <DateFilter />
-    </header>
+    </div>
   )
 }

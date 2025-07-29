@@ -3,10 +3,14 @@ import { KpisData, KpiTotals, KpiType } from '../types/kpis'
 import useDateFilter from './use-date-filter'
 import useQuery from './use-query'
 import { QueryError } from '../types/api'
+import { useFilters } from './use-filters'
+import { filtersToApiParams } from '../utils/filter-utils'
+import { useMemo } from 'react'
 
 async function getKpiTotals(
   date_from?: string,
-  date_to?: string
+  date_to?: string,
+  activeFilters?: any
 ): Promise<KpiTotals> {
 
   /**
@@ -23,10 +27,8 @@ async function getKpiTotals(
   date_to_aux.setDate(date_to_aux.getDate() + 1);
   const date_to_aux_str = date_to_aux.toISOString().substring(0,10);
 
-  const { data } = await queryPipe<KpisData>('kpis', {
-    date_from,
-    date_to: date_to_aux_str
-  })
+  const params = filtersToApiParams(activeFilters, date_from, date_to_aux_str)
+  const { data } = await queryPipe<KpisData>('kpis', params)
 
   const queryData = data.filter(record => record['date'] != date_to_aux_str);
 
@@ -77,9 +79,16 @@ function getNotFoundColumnsWarning(warning: QueryError | null): string | null {
 
 export default function useKpiTotals() {
   const { startDate, endDate } = useDateFilter()
+  const { activeFilters } = useFilters()
+  
+  // Create a cache key that includes filters
+  const cacheKey = useMemo(() => {
+    return [startDate, endDate, 'kpiTotals', JSON.stringify(activeFilters)]
+  }, [startDate, endDate, activeFilters])
+  
   const { warning, ...query } = useQuery(
-    [startDate, endDate, 'kpiTotals'],
-    getKpiTotals
+    cacheKey,
+    () => getKpiTotals(startDate, endDate, activeFilters)
   )
   return { ...query, warning: getNotFoundColumnsWarning(warning) }
 }

@@ -1,0 +1,56 @@
+DESCRIPTION >
+    Process individual page view records from analytics_hits into detailed storage
+    Filters for page_hit events and stores complete enrichment data
+
+NODE process_page_views
+DESCRIPTION >
+    Extract and store individual page view records with full enrichment
+
+SQL >
+    SELECT
+        timestamp,
+        action,
+        version,
+        session_id,
+        client_id,
+        visitor_id,
+        site_id,
+        hostname,
+        path,
+        title,
+        language,
+        country_code,
+        region,
+        city,
+        referrer,
+        referrer_name,
+        referrer_icon,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        utm_content,
+        utm_term,
+        duration_seconds,
+        event_name,
+        event_meta_keys,
+        event_meta_values,
+        tag_keys,
+        tag_values,
+        ip,
+        bot,
+        bot_reason,
+        href,
+        current_domain,
+        device,
+        browser,
+        os,
+        channel
+    FROM analytics_hits
+    WHERE action = 'page_hit'
+      AND bot = 0
+      AND session_id != '0'
+      AND session_id != ''
+      AND visitor_id > 0
+
+TYPE materialized
+DATASOURCE analytics_page_views_detailed 

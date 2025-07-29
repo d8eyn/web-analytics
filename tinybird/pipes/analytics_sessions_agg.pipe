@@ -5,6 +5,7 @@ DESCRIPTION >
 SQL >
     SELECT
         toDate(timestamp) AS date,
+        coalesce(site_id, '') AS site_id,
         session_id,
         any(coalesce(client_id, 0)) AS client_id,
         any(coalesce(visitor_id, 0)) AS visitor_id,
@@ -17,9 +18,13 @@ SQL >
         any(coalesce(city, '')) AS city,
         any(coalesce(channel, 'Direct')) AS channel,
         any(coalesce(language, '')) AS language,
+        any(coalesce(referrer, '')) AS referrer,
+        any(coalesce(referrer_name, '')) AS referrer_name,
         any(coalesce(utm_source, '')) AS utm_source,
         any(coalesce(utm_medium, '')) AS utm_medium,
         any(coalesce(utm_campaign, '')) AS utm_campaign,
+        any(coalesce(utm_content, '')) AS utm_content,
+        any(coalesce(utm_term, '')) AS utm_term,
         argMinState(coalesce(path, JSONExtractString(payload, 'pathname'), ''), timestamp) AS entry_page,
         argMaxState(coalesce(path, JSONExtractString(payload, 'pathname'), ''), timestamp) AS exit_page,
         argMinState(coalesce(title, JSONExtractString(payload, 'title'), ''), timestamp) AS entry_title,
@@ -34,7 +39,7 @@ SQL >
     WHERE action = 'page_hit' 
       AND session_id != '0' 
       AND session_id != ''
-    GROUP BY date, session_id
+    GROUP BY date, site_id, session_id
 
 TYPE MATERIALIZED
 DATASOURCE analytics_sessions_mv

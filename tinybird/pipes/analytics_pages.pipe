@@ -5,6 +5,7 @@ DESCRIPTION >
 SQL >
     SELECT
         toDate(timestamp) AS date,
+        coalesce(site_id, '') AS site_id,
         hostname,
         coalesce(path, JSONExtractString(payload, 'pathname')) as pathname,
         any(coalesce(title, JSONExtractString(payload, 'title'))) AS title,
@@ -15,6 +16,8 @@ SQL >
         any(coalesce(region, '')) as region,
         any(coalesce(city, '')) as city,
         any(coalesce(channel, 'Direct')) as channel,
+        any(coalesce(referrer, '')) as referrer,
+        any(coalesce(referrer_name, '')) as referrer_name,
         any(coalesce(utm_source, '')) as utm_source,
         any(coalesce(utm_medium, '')) as utm_medium,
         any(coalesce(utm_campaign, '')) as utm_campaign,
@@ -31,7 +34,7 @@ SQL >
       AND session_id != '0' 
       AND session_id != ''
     GROUP BY 
-        date, hostname, pathname
+        date, site_id, hostname, pathname
 
 TYPE MATERIALIZED
 DATASOURCE analytics_pages_mv

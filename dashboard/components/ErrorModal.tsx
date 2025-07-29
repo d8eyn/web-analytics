@@ -1,72 +1,98 @@
-import { useRouter } from 'next/router'
+'use client'
 
-import { Button } from '@tremor/react'
-import { useAnalytics } from './Provider'
-import Modal from './Modal'
-import { colors } from '../styles/theme'
+import { Fragment } from 'react'
+import { Dialog, Transition } from '@headlessui/react'
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 
-export default function ErrorModal() {
-  const router = useRouter()
-  const { error, setError } = useAnalytics()
-
-  const handleClose = () => {
-    setError(null)
-    router.push('/', {
-      query: {
-        ...router.query,
-        token: null,
-      },
-    })
+// Simple Button component replacement
+function Button({ children, onClick, className = '', variant = 'primary', ...props }: any) {
+  const baseClasses = 'px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors'
+  const variantClasses = {
+    primary: 'bg-primary text-white hover:bg-primary-dark focus:ring-primary',
+    secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
+    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
   }
-
+  
   return (
-    <Modal isOpen={!!error} onClose={handleClose}>
-      <Modal.Content>
-        <span className="text-sm text-error font-semibold flex items-center gap-2 mb-4">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width="16" height="16" rx="8" fill={colors.error} />
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M6.4991 5.25721C6.15616 4.91426 5.60015 4.91426 5.25721 5.25721C4.91426 5.60015 4.91426 6.15616 5.25721 6.4991L6.78265 8.02455L5.25721 9.54999C4.91427 9.89294 4.91427 10.449 5.25721 10.7919C5.60015 11.1348 6.15617 11.1348 6.49911 10.7919L8.02455 9.26645L9.54999 10.7919C9.89293 11.1348 10.4489 11.1348 10.7919 10.7919C11.1348 10.4489 11.1348 9.89293 10.7919 9.54999L9.26645 8.02455L10.7919 6.49911C11.1348 6.15617 11.1348 5.60015 10.7919 5.25721C10.4489 4.91427 9.89293 4.91427 9.54999 5.25721L8.02455 6.78265L6.4991 5.25721Z"
-              fill="white"
-            />
-          </svg>
-          Error
-        </span>
-        <Modal.Title className="text-2xl">
-          {error?.message
-            ? `${error.message.charAt(0).toUpperCase()}${error.message.slice(
-                1
-              )}`
-            : 'Something went wrong'}
-        </Modal.Title>
-        <div className="my-8">
-          <Modal.Description>
-            {`Go to `}
-            <a
-              href="https://docs.tinybird.co/api-reference/api-reference.html#authentication"
-              className="underline underline-offset-2"
-              target="_blank"
-              rel="noreferrer"
+    <button 
+      onClick={onClick}
+      className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  )
+}
+
+interface ErrorModalProps {
+  open: boolean
+  onClose: () => void
+  title?: string
+  message?: string
+}
+
+export default function ErrorModal({ 
+  open, 
+  onClose, 
+  title = 'Error', 
+  message = 'Something went wrong' 
+}: ErrorModalProps) {
+  return (
+    <Transition.Root show={open} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 z-10 overflow-y-auto">
+          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              enterTo="opacity-100 translate-y-0 sm:scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              https://docs.tinybird.co/api-reference/api-reference.html#authentication
-            </a>
-            {` for tips about how to fix this problem.`}
-          </Modal.Description>
+              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6">
+                <div>
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                    <ExclamationTriangleIcon className="h-6 w-6 text-red-600" aria-hidden="true" />
+                  </div>
+                  <div className="mt-3 text-center sm:mt-5">
+                    <Dialog.Title as="h3" className="text-base font-semibold leading-6 text-gray-900">
+                      {title}
+                    </Dialog.Title>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        {message}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-5 sm:mt-6">
+                  <Button
+                    variant="primary"
+                    onClick={onClose}
+                    className="w-full"
+                  >
+                    OK
+                  </Button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
         </div>
-        <div className="flex justify-end">
-          <Button variant="secondary" color="slate" onClick={handleClose}>
-            Close
-          </Button>
-        </div>
-      </Modal.Content>
-    </Modal>
+      </Dialog>
+    </Transition.Root>
   )
 }

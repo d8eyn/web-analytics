@@ -1,4 +1,6 @@
-import { useRouter } from 'next/router'
+'use client'
+
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Modal from '../Modal'
 import CredentialsForm from './CredentialsForm'
@@ -6,13 +8,10 @@ import CredentialsForm from './CredentialsForm'
 export default function Credentials() {
   const [isOpen, setIsOpen] = useState(false)
 
-  const { isReady } = useRouter()
-
   useEffect(() => {
-    if (!isReady) return
     setIsOpen(true)
     return () => setIsOpen(false)
-  }, [isReady])
+  }, [])
 
   return (
     <Modal isOpen={isOpen} onClose={() => undefined}>

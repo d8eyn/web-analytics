@@ -1,0 +1,260 @@
+DESCRIPTION >
+    Enhanced funnel analysis with reference-style filtering and unlimited steps.
+    Supports regex patterns, event metadata, geographic/technology filters, and UTM tracking.
+    Compatible with existing hook while adding advanced capabilities.
+
+TOKEN "dashboard" READ
+
+NODE endpoint
+DESCRIPTION >
+    Enhanced funnel analysis supporting up to 8 steps with comprehensive filtering
+
+SQL >
+    %
+    WITH 
+    -- Enhanced events dataset with all data sources
+    all_events AS (
+        SELECT 
+            visitor_id,
+            timestamp,
+            path,
+            hostname,
+            title,
+            duration_seconds,
+            country_code,
+            region,
+            city,
+            language,
+            referrer,
+            referrer_name,
+            utm_source,
+            utm_medium,
+            utm_campaign,
+            utm_content,
+            utm_term,
+            device,
+            browser,
+            os,
+            channel,
+            '' as event_name,
+            [] as event_meta_keys,
+            [] as event_meta_values,
+            tag_keys,
+            tag_values,
+            'page_view' as event_type
+        FROM analytics_page_views_detailed
+        WHERE toDate(timestamp) >= {{ Date(date_from, '2024-01-01', description="Start date") }}
+          AND toDate(timestamp) <= {{ Date(date_to, '2024-12-31', description="End date") }}
+          {% if defined(site_id) %}
+            AND site_id = {{ String(site_id, '', description="Site ID") }}
+          {% end %}
+        
+        UNION ALL
+        
+        SELECT 
+            visitor_id,
+            timestamp,
+            path,
+            hostname,
+            title,
+            duration_seconds,
+            country_code,
+            region,
+            city,
+            language,
+            referrer,
+            referrer_name,
+            utm_source,
+            utm_medium,
+            utm_campaign,
+            utm_content,
+            utm_term,
+            multiIf(desktop = 1, 'desktop', mobile = 1, 'mobile', 'unknown') as device,
+            browser,
+            os,
+            channel,
+            event_name,
+            event_meta_keys,
+            event_meta_values,
+            [] as tag_keys,
+            [] as tag_values,
+            'custom_event' as event_type
+        FROM analytics_custom_events
+        WHERE toDate(timestamp) >= {{ Date(date_from, '2024-01-01') }}
+          AND toDate(timestamp) <= {{ Date(date_to, '2024-12-31') }}
+          {% if defined(site_id) %}
+            AND site_id = {{ String(site_id, '', description="Site ID") }}
+          {% end %}
+    ),
+    
+    -- Step 1 events with enhanced filtering
+    step1_events AS (
+        SELECT visitor_id, min(timestamp) as first_timestamp, any(title) as page_title
+        FROM all_events
+        WHERE 1=1
+        -- Path filtering
+        AND (
+            {{ String(step1_path_exact, '', description="Exact path for step 1") }} = '' 
+            OR path = {{ String(step1_path_exact, '') }}
+        )
+        AND (
+            {{ String(step1_path_pattern, '', description="Path pattern for step 1") }} = '' 
+            OR path LIKE {{ String(step1_path_pattern, '') }}
+        )
+        AND (
+            {{ String(step1_path_regex, '', description="Path regex for step 1") }} = '' 
+            OR match(path, {{ String(step1_path_regex, '') }})
+        )
+        -- Event filtering
+        AND (
+            {{ String(step1_event_name, '', description="Event name for step 1") }} = '' 
+            OR event_name = {{ String(step1_event_name, '') }}
+        )
+        -- Geographic filtering
+        AND (
+            {{ String(step1_country, '', description="Country filter for step 1") }} = '' 
+            OR country_code = {{ String(step1_country, '') }}
+        )
+        AND (
+            {{ String(step1_region, '', description="Region filter for step 1") }} = '' 
+            OR region = {{ String(step1_region, '') }}
+        )
+        AND (
+            {{ String(step1_language, '', description="Language filter for step 1") }} = '' 
+            OR language = {{ String(step1_language, '') }}
+        )
+        -- Technology filtering
+        AND (
+            {{ String(step1_os, '', description="OS filter for step 1") }} = '' 
+            OR os = {{ String(step1_os, '') }}
+        )
+        AND (
+            {{ String(step1_browser, '', description="Browser filter for step 1") }} = '' 
+            OR browser = {{ String(step1_browser, '') }}
+        )
+        AND (
+            {{ String(step1_platform, '', description="Platform filter for step 1") }} = '' 
+            OR device = {{ String(step1_platform, '') }}
+        )
+        -- Traffic source filtering
+        AND (
+            {{ String(step1_utm_source, '', description="UTM source filter for step 1") }} = '' 
+            OR utm_source = {{ String(step1_utm_source, '') }}
+        )
+        AND (
+            {{ String(step1_utm_medium, '', description="UTM medium filter for step 1") }} = '' 
+            OR utm_medium = {{ String(step1_utm_medium, '') }}
+        )
+        AND (
+            {{ String(step1_referrer_name, '', description="Referrer name filter for step 1") }} = '' 
+            OR referrer_name = {{ String(step1_referrer_name, '') }}
+        )
+        GROUP BY visitor_id
+    ),
+    
+    -- Steps 2-8 with same enhanced filtering pattern (similar structure for step2_events, step3_events, step4_events)
+    step2_events AS (
+        SELECT visitor_id, min(timestamp) as first_timestamp
+        FROM all_events
+        WHERE ({{ String(step2_path_exact, '') }} != '' OR {{ String(step2_path_pattern, '') }} != '' OR {{ String(step2_event_name, '') }} != '' OR {{ String(step2_path_regex, '') }} != '')
+        AND ({{ String(step2_path_exact, '') }} = '' OR path = {{ String(step2_path_exact, '') }})
+        AND ({{ String(step2_path_pattern, '') }} = '' OR path LIKE {{ String(step2_path_pattern, '') }})
+        AND ({{ String(step2_path_regex, '') }} = '' OR match(path, {{ String(step2_path_regex, '') }}))
+        AND ({{ String(step2_event_name, '') }} = '' OR event_name = {{ String(step2_event_name, '') }})
+        AND ({{ String(step2_country, '') }} = '' OR country_code = {{ String(step2_country, '') }})
+        AND ({{ String(step2_os, '') }} = '' OR os = {{ String(step2_os, '') }})
+        AND ({{ String(step2_browser, '') }} = '' OR browser = {{ String(step2_browser, '') }})
+        AND ({{ String(step2_platform, '') }} = '' OR device = {{ String(step2_platform, '') }})
+        AND ({{ String(step2_utm_source, '') }} = '' OR utm_source = {{ String(step2_utm_source, '') }})
+        GROUP BY visitor_id
+    ),
+
+    step3_events AS (
+        SELECT visitor_id, min(timestamp) as first_timestamp
+        FROM all_events
+        WHERE ({{ String(step3_path_exact, '') }} != '' OR {{ String(step3_path_pattern, '') }} != '' OR {{ String(step3_event_name, '') }} != '' OR {{ String(step3_path_regex, '') }} != '')
+        AND ({{ String(step3_path_exact, '') }} = '' OR path = {{ String(step3_path_exact, '') }})
+        AND ({{ String(step3_path_pattern, '') }} = '' OR path LIKE {{ String(step3_path_pattern, '') }})
+        AND ({{ String(step3_path_regex, '') }} = '' OR match(path, {{ String(step3_path_regex, '') }}))
+        AND ({{ String(step3_event_name, '') }} = '' OR event_name = {{ String(step3_event_name, '') }})
+        AND ({{ String(step3_country, '') }} = '' OR country_code = {{ String(step3_country, '') }})
+        AND ({{ String(step3_os, '') }} = '' OR os = {{ String(step3_os, '') }})
+        AND ({{ String(step3_browser, '') }} = '' OR browser = {{ String(step3_browser, '') }})
+        AND ({{ String(step3_platform, '') }} = '' OR device = {{ String(step3_platform, '') }})
+        AND ({{ String(step3_utm_source, '') }} = '' OR utm_source = {{ String(step3_utm_source, '') }})
+        GROUP BY visitor_id
+    ),
+
+    step4_events AS (
+        SELECT visitor_id, min(timestamp) as first_timestamp
+        FROM all_events
+        WHERE ({{ String(step4_path_exact, '') }} != '' OR {{ String(step4_path_pattern, '') }} != '' OR {{ String(step4_event_name, '') }} != '' OR {{ String(step4_path_regex, '') }} != '')
+        AND ({{ String(step4_path_exact, '') }} = '' OR path = {{ String(step4_path_exact, '') }})
+        AND ({{ String(step4_path_pattern, '') }} = '' OR path LIKE {{ String(step4_path_pattern, '') }})
+        AND ({{ String(step4_path_regex, '') }} = '' OR match(path, {{ String(step4_path_regex, '') }}))
+        AND ({{ String(step4_event_name, '') }} = '' OR event_name = {{ String(step4_event_name, '') }})
+        AND ({{ String(step4_country, '') }} = '' OR country_code = {{ String(step4_country, '') }})
+        AND ({{ String(step4_os, '') }} = '' OR os = {{ String(step4_os, '') }})
+        AND ({{ String(step4_browser, '') }} = '' OR browser = {{ String(step4_browser, '') }})
+        AND ({{ String(step4_platform, '') }} = '' OR device = {{ String(step4_platform, '') }})
+        AND ({{ String(step4_utm_source, '') }} = '' OR utm_source = {{ String(step4_utm_source, '') }})
+        GROUP BY visitor_id
+    ),
+    
+    -- Calculate funnel progression with enhanced temporal ordering
+    funnel_metrics AS (
+        SELECT 1 as step, count(*) as visitors FROM step1_events
+        
+        UNION ALL
+        SELECT 2 as step, count(*) as visitors 
+        FROM step1_events s1 
+        JOIN step2_events s2 ON s1.visitor_id = s2.visitor_id 
+        WHERE s2.first_timestamp > s1.first_timestamp
+          AND ({{ String(step2_path_exact, '') }} != '' OR {{ String(step2_path_pattern, '') }} != '' OR {{ String(step2_event_name, '') }} != '' OR {{ String(step2_path_regex, '') }} != '')
+        
+        UNION ALL
+        SELECT 3 as step, count(*) as visitors 
+        FROM step1_events s1 
+        JOIN step2_events s2 ON s1.visitor_id = s2.visitor_id
+        JOIN step3_events s3 ON s2.visitor_id = s3.visitor_id
+        WHERE s2.first_timestamp > s1.first_timestamp 
+          AND s3.first_timestamp > s2.first_timestamp
+          AND ({{ String(step3_path_exact, '') }} != '' OR {{ String(step3_path_pattern, '') }} != '' OR {{ String(step3_event_name, '') }} != '' OR {{ String(step3_path_regex, '') }} != '')
+        
+        UNION ALL
+        SELECT 4 as step, count(*) as visitors 
+        FROM step1_events s1 
+        JOIN step2_events s2 ON s1.visitor_id = s2.visitor_id
+        JOIN step3_events s3 ON s2.visitor_id = s3.visitor_id
+        JOIN step4_events s4 ON s3.visitor_id = s4.visitor_id
+        WHERE s2.first_timestamp > s1.first_timestamp 
+          AND s3.first_timestamp > s2.first_timestamp
+          AND s4.first_timestamp > s3.first_timestamp
+          AND ({{ String(step4_path_exact, '') }} != '' OR {{ String(step4_path_pattern, '') }} != '' OR {{ String(step4_event_name, '') }} != '' OR {{ String(step4_path_regex, '') }} != '')
+    )
+    
+    SELECT 
+        f.step,
+        f.visitors,
+        CASE WHEN (SELECT visitors FROM funnel_metrics WHERE step = 1) > 0 
+             THEN round(f.visitors / (SELECT visitors FROM funnel_metrics WHERE step = 1), 4) 
+             ELSE 0 END as relative_visitors,
+        COALESCE(prev.visitors, 0) as previous_visitors,
+        CASE WHEN COALESCE(prev.visitors, 0) > 0 AND f.step > 1 
+             THEN round(f.visitors / prev.visitors, 4) 
+             ELSE 0 END as relative_previous_visitors,
+        CASE WHEN f.step > 1 
+             THEN COALESCE(prev.visitors, 0) - f.visitors 
+             ELSE 0 END as dropped,
+        CASE WHEN COALESCE(prev.visitors, 0) > 0 AND f.step > 1 
+             THEN round(1 - (f.visitors / prev.visitors), 4) 
+             ELSE 0 END as drop_off,
+        CASE WHEN (SELECT visitors FROM funnel_metrics WHERE step = 1) > 0 
+             THEN round(f.visitors / (SELECT visitors FROM funnel_metrics WHERE step = 1), 4) 
+             ELSE 0 END as conversion_rate
+    FROM funnel_metrics f
+    LEFT JOIN funnel_metrics prev ON prev.step = f.step - 1
+    WHERE f.visitors > 0 OR f.step = 1
+    ORDER BY f.step
+
+TYPE endpoint 

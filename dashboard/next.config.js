@@ -1,11 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
-  i18n: {
-    locales: ['en'],
-    defaultLocale: 'en',
-  },
+  // swcMinify is enabled by default in Next.js 15
+  // i18n config removed as it's not needed with App Router
 }
 
 module.exports = nextConfig

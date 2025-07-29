@@ -36,3 +36,44 @@ export function QuestionIcon({ size = 16, className }: IconProps) {
     </svg>
   )
 }
+
+export function FunnelIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M1.5 2.5A.5.5 0 0 1 2 2h12a.5.5 0 0 1 .39.81L10.5 7.5v4.5a.5.5 0 0 1-.276.447l-2 1A.5.5 0 0 1 7.5 13V7.5L3.61 2.81A.5.5 0 0 1 4 2h-2.5z"
+        stroke="currentColor"
+        strokeWidth="1"
+        fill="none"
+      />
+    </svg>
+  )
+}
+
+export function CloseIcon({ size = 16, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12 4L4 12M4 4l8 8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}

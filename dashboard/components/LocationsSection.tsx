@@ -1,93 +1,71 @@
-import { BarList } from '@tinybirdco/charts';
+'use client'
+
+import BarList from './BarList';
 import { TabbedWidget } from './TabbedWidget';
-import InView from './InView';
-import useDateFilter from '../lib/hooks/use-date-filter';
-import { getConfig } from '../lib/api';
-import { useRouter } from 'next/router';
-
-function buildEndpointUrl(host: string, endpoint: string) {
-  const apiUrl =
-    {
-      'https://ui.tinybird.co': 'https://api.tinybird.co',
-      'https://ui.us-east.tinybird.co': 'https://api.us-east.tinybird.co',
-    }[host] ?? host;
-
-  return `${apiUrl}/v0/pipes/${endpoint}.json`;
-}
+import useDashboardData from '../lib/hooks/use-dashboard-data';
 
 export function LocationsSection() {
-  const { query } = useRouter();
-  const { host } = getConfig(typeof query === 'string' ? query : undefined);
-  const { startDate, endDate } = useDateFilter();
+  const { summary, isLoading } = useDashboardData();
 
-  const commonParams = {
-    date_from: startDate,
-    date_to: endDate,
-    limit: 8,
-  };
+  if (isLoading) {
+    return (
+      <div className="animate-pulse bg-gray-200 rounded-lg h-96"></div>
+    );
+  }
 
-  const tabs = [
-    {
-      name: 'Countries',
-      content: (
-        <InView height={400}>
-          <BarList
-            endpoint={buildEndpointUrl(host, 'top_locations')}
-            index="country_code"
-            categories={['visits']}
-            title="Top Countries"
-            params={commonParams}
-            height={400}
-          />
-        </InView>
-      ),
-    },
-    {
-      name: 'Regions',
-      content: (
-        <InView height={400}>
-          <BarList
-            endpoint={buildEndpointUrl(host, 'top_regions')}
-            index="region"
-            categories={['visits']}
-            title="Top Regions"
-            params={commonParams}
-            height={400}
-          />
-        </InView>
-      ),
-    },
-    {
-      name: 'Cities',
-      content: (
-        <InView height={400}>
-          <BarList
-            endpoint={buildEndpointUrl(host, 'top_cities')}
-            index="city"
-            categories={['visits']}
-            title="Top Cities"
-            params={commonParams}
-            height={400}
-          />
-        </InView>
-      ),
-    },
-    {
-      name: 'Languages',
-      content: (
-        <InView height={400}>
-          <BarList
-            endpoint={buildEndpointUrl(host, 'top_languages')}
-            index="language"
-            categories={['visits']}
-            title="Top Languages"
-            params={commonParams}
-            height={400}
-          />
-        </InView>
-      ),
-    },
-  ];
+  const topLocationsData = summary.getTopLocations().map(location => ({
+    name: location.name,
+    visits: location.visits,
+    hits: location.hits,
+  }));
 
-  return <TabbedWidget title="Locations" tabs={tabs} />;
+  const topRegionsData = summary.getTopRegions().map(region => ({
+    name: region.name,
+    visits: region.visits,
+    hits: region.hits,
+  }));
+
+  const topCitiesData = summary.getTopCities().map(city => ({
+    name: city.name,
+    visits: city.visits,
+    hits: city.hits,
+  }));
+
+  return (
+    <TabbedWidget
+      title="Locations"
+      tabs={[
+        {
+          name: 'Countries',
+          content: (
+            <BarList
+              data={topLocationsData}
+              index="name"
+              categories={['visits']}
+            />
+          ),
+        },
+        {
+          name: 'Regions',
+          content: (
+            <BarList
+              data={topRegionsData}
+              index="name"
+              categories={['visits']}
+            />
+          ),
+        },
+        {
+          name: 'Cities',
+          content: (
+            <BarList
+              data={topCitiesData}
+              index="name"
+              categories={['visits']}
+            />
+          ),
+        },
+      ]}
+    />
+  );
 } 

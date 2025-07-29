@@ -1,0 +1,153 @@
+DESCRIPTION >
+    Multi-step funnel analysis supporting 2-4 configurable steps.
+
+TOKEN "dashboard" READ
+
+NODE endpoint
+DESCRIPTION >
+    Calculate funnel metrics for up to 4 steps
+
+SQL >
+    %
+    WITH 
+    -- Step 1 events
+    step1_events AS (
+        SELECT visitor_id, min(timestamp) as first_timestamp
+        FROM (
+            SELECT visitor_id, timestamp FROM analytics_events_api 
+            WHERE action = 'page_hit' 
+              AND toDate(timestamp) >= {{ Date(date_from, '2024-01-01', description="Start date") }} 
+              AND toDate(timestamp) <= {{ Date(date_to, '2024-12-31', description="End date") }}
+              AND (
+                ({{ String(step1_path_pattern, '', description="Path pattern for step 1") }} != '' AND path LIKE {{ String(step1_path_pattern) }}) 
+                OR ({{ String(step1_path_exact, '', description="Exact path for step 1") }} != '' AND path = {{ String(step1_path_exact) }})
+                OR ({{ String(step1_path_pattern) }} = '' AND {{ String(step1_path_exact) }} = '' AND {{ String(step1_event_name) }} = '')
+              )
+            UNION ALL
+            SELECT visitor_id, timestamp FROM analytics_custom_events 
+            WHERE {{ String(step1_event_name) }} != '' 
+              AND event_name = {{ String(step1_event_name) }}
+              AND toDate(timestamp) >= {{ Date(date_from, '2024-01-01') }} 
+              AND toDate(timestamp) <= {{ Date(date_to, '2024-12-31') }}
+        )
+        GROUP BY visitor_id
+    ),
+    -- Step 2 events
+    step2_events AS (
+        SELECT visitor_id, min(timestamp) as first_timestamp
+        FROM (
+            SELECT visitor_id, timestamp FROM analytics_events_api 
+            WHERE action = 'page_hit' 
+              AND ({{ String(step2_path_pattern) }} != '' OR {{ String(step2_path_exact) }} != '' OR {{ String(step2_event_name) }} != '')
+              AND toDate(timestamp) >= {{ Date(date_from, '2024-01-01') }} 
+              AND toDate(timestamp) <= {{ Date(date_to, '2024-12-31') }}
+              AND (
+                ({{ String(step2_path_pattern) }} != '' AND path LIKE {{ String(step2_path_pattern) }}) 
+                OR ({{ String(step2_path_exact) }} != '' AND path = {{ String(step2_path_exact) }})
+              )
+            UNION ALL
+            SELECT visitor_id, timestamp FROM analytics_custom_events 
+            WHERE {{ String(step2_event_name) }} != '' 
+              AND event_name = {{ String(step2_event_name) }}
+              AND toDate(timestamp) >= {{ Date(date_from, '2024-01-01') }} 
+              AND toDate(timestamp) <= {{ Date(date_to, '2024-12-31') }}
+        )
+        GROUP BY visitor_id
+    ),
+    -- Step 3 events
+    step3_events AS (
+        SELECT visitor_id, min(timestamp) as first_timestamp
+        FROM (
+            SELECT visitor_id, timestamp FROM analytics_events_api 
+            WHERE action = 'page_hit' 
+              AND ({{ String(step3_path_pattern) }} != '' OR {{ String(step3_path_exact) }} != '' OR {{ String(step3_event_name) }} != '')
+              AND toDate(timestamp) >= {{ Date(date_from, '2024-01-01') }} 
+              AND toDate(timestamp) <= {{ Date(date_to, '2024-12-31') }}
+              AND (
+                ({{ String(step3_path_pattern) }} != '' AND path LIKE {{ String(step3_path_pattern) }}) 
+                OR ({{ String(step3_path_exact) }} != '' AND path = {{ String(step3_path_exact) }})
+              )
+            UNION ALL
+            SELECT visitor_id, timestamp FROM analytics_custom_events 
+            WHERE {{ String(step3_event_name) }} != '' 
+              AND event_name = {{ String(step3_event_name) }}
+              AND toDate(timestamp) >= {{ Date(date_from, '2024-01-01') }} 
+              AND toDate(timestamp) <= {{ Date(date_to, '2024-12-31') }}
+        )
+        GROUP BY visitor_id
+    ),
+    -- Step 4 events
+    step4_events AS (
+        SELECT visitor_id, min(timestamp) as first_timestamp
+        FROM (
+            SELECT visitor_id, timestamp FROM analytics_events_api 
+            WHERE action = 'page_hit' 
+              AND ({{ String(step4_path_pattern) }} != '' OR {{ String(step4_path_exact) }} != '' OR {{ String(step4_event_name) }} != '')
+              AND toDate(timestamp) >= {{ Date(date_from, '2024-01-01') }} 
+              AND toDate(timestamp) <= {{ Date(date_to, '2024-12-31') }}
+              AND (
+                ({{ String(step4_path_pattern) }} != '' AND path LIKE {{ String(step4_path_pattern) }}) 
+                OR ({{ String(step4_path_exact) }} != '' AND path = {{ String(step4_path_exact) }})
+              )
+            UNION ALL
+            SELECT visitor_id, timestamp FROM analytics_custom_events 
+            WHERE {{ String(step4_event_name) }} != '' 
+              AND event_name = {{ String(step4_event_name) }}
+              AND toDate(timestamp) >= {{ Date(date_from, '2024-01-01') }} 
+              AND toDate(timestamp) <= {{ Date(date_to, '2024-12-31') }}
+        )
+        GROUP BY visitor_id
+    ),
+    -- Calculate funnel progression
+    funnel_metrics AS (
+        SELECT 1 as step, count(*) as visitors FROM step1_events
+        UNION ALL
+        SELECT 2 as step, count(*) as visitors 
+        FROM step1_events s1 
+        INNER JOIN step2_events s2 ON s1.visitor_id = s2.visitor_id 
+        WHERE s2.first_timestamp > s1.first_timestamp
+          AND ({{ String(step2_path_pattern) }} != '' OR {{ String(step2_path_exact) }} != '' OR {{ String(step2_event_name) }} != '')
+        UNION ALL
+        SELECT 3 as step, count(*) as visitors 
+        FROM step1_events s1 
+        INNER JOIN step2_events s2 ON s1.visitor_id = s2.visitor_id
+        INNER JOIN step3_events s3 ON s2.visitor_id = s3.visitor_id
+        WHERE s2.first_timestamp > s1.first_timestamp 
+          AND s3.first_timestamp > s2.first_timestamp
+          AND ({{ String(step3_path_pattern) }} != '' OR {{ String(step3_path_exact) }} != '' OR {{ String(step3_event_name) }} != '')
+        UNION ALL
+        SELECT 4 as step, count(*) as visitors 
+        FROM step1_events s1 
+        INNER JOIN step2_events s2 ON s1.visitor_id = s2.visitor_id
+        INNER JOIN step3_events s3 ON s2.visitor_id = s3.visitor_id
+        INNER JOIN step4_events s4 ON s3.visitor_id = s4.visitor_id
+        WHERE s2.first_timestamp > s1.first_timestamp 
+          AND s3.first_timestamp > s2.first_timestamp
+          AND s4.first_timestamp > s3.first_timestamp
+          AND ({{ String(step4_path_pattern) }} != '' OR {{ String(step4_path_exact) }} != '' OR {{ String(step4_event_name) }} != '')
+    )
+    SELECT 
+        f.step,
+        f.visitors,
+        CASE WHEN (SELECT visitors FROM funnel_metrics WHERE step = 1) > 0 
+             THEN round(f.visitors / (SELECT visitors FROM funnel_metrics WHERE step = 1), 4) 
+             ELSE 0 END as relative_visitors,
+        COALESCE(prev.visitors, 0) as previous_visitors,
+        CASE WHEN COALESCE(prev.visitors, 0) > 0 AND f.step > 1 
+             THEN round(f.visitors / prev.visitors, 4) 
+             ELSE 0 END as relative_previous_visitors,
+        CASE WHEN f.step > 1 
+             THEN COALESCE(prev.visitors, 0) - f.visitors 
+             ELSE 0 END as dropped,
+        CASE WHEN COALESCE(prev.visitors, 0) > 0 AND f.step > 1 
+             THEN round(1 - (f.visitors / prev.visitors), 4) 
+             ELSE 0 END as drop_off,
+        CASE WHEN (SELECT visitors FROM funnel_metrics WHERE step = 1) > 0 
+             THEN round(f.visitors / (SELECT visitors FROM funnel_metrics WHERE step = 1), 4) 
+             ELSE 0 END as conversion_rate
+    FROM funnel_metrics f
+    LEFT JOIN funnel_metrics prev ON prev.step = f.step - 1
+    WHERE f.visitors > 0 OR f.step = 1
+    ORDER BY f.step
+
+TYPE endpoint 

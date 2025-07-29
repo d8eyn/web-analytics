@@ -1,93 +1,71 @@
-import { BarList } from '@tinybirdco/charts';
+'use client'
+
+import BarList from './BarList';
 import { TabbedWidget } from './TabbedWidget';
-import InView from './InView';
-import useDateFilter from '../lib/hooks/use-date-filter';
-import { getConfig } from '../lib/api';
-import { useRouter } from 'next/router';
-
-function buildEndpointUrl(host: string, endpoint: string) {
-  const apiUrl =
-    {
-      'https://ui.tinybird.co': 'https://api.tinybird.co',
-      'https://ui.us-east.tinybird.co': 'https://api.us-east.tinybird.co',
-    }[host] ?? host;
-
-  return `${apiUrl}/v0/pipes/${endpoint}.json`;
-}
+import useDashboardData from '../lib/hooks/use-dashboard-data';
 
 export function TechnologySection() {
-  const { query } = useRouter();
-  const { host } = getConfig(typeof query === 'string' ? query : undefined);
-  const { startDate, endDate } = useDateFilter();
+  const { summary, isLoading } = useDashboardData();
 
-  const commonParams = {
-    date_from: startDate,
-    date_to: endDate,
-    limit: 8,
-  };
+  if (isLoading) {
+    return (
+      <div className="animate-pulse bg-gray-200 rounded-lg h-96"></div>
+    );
+  }
 
-  const tabs = [
-    {
-      name: 'OS',
-      content: (
-        <InView height={400}>
-          <BarList
-            endpoint={buildEndpointUrl(host, 'top_os')}
-            index="os"
-            categories={['visits']}
-            title="Top Operating Systems"
-            params={commonParams}
-            height={400}
-          />
-        </InView>
-      ),
-    },
-    {
-      name: 'Browsers',
-      content: (
-        <InView height={400}>
-          <BarList
-            endpoint={buildEndpointUrl(host, 'top_browsers')}
-            index="browser"
-            categories={['visits']}
-            title="Top Browsers"
-            params={commonParams}
-            height={400}
-          />
-        </InView>
-      ),
-    },
-    {
-      name: 'Platforms',
-      content: (
-        <InView height={400}>
-          <BarList
-            endpoint={buildEndpointUrl(host, 'top_devices')}
-            index="device"
-            categories={['visits']}
-            title="Top Devices"
-            params={commonParams}
-            height={400}
-          />
-        </InView>
-      ),
-    },
-    {
-      name: 'Screens',
-      content: (
-        <InView height={400}>
-          <BarList
-            endpoint={buildEndpointUrl(host, 'top_devices')}
-            index="screen_class"
-            categories={['visits']}
-            title="Screen Sizes"
-            params={commonParams}
-            height={400}
-          />
-        </InView>
-      ),
-    },
-  ];
+  const topBrowsersData = summary.getTopBrowsers().map(browser => ({
+    name: browser.name,
+    visits: browser.visits,
+    hits: browser.hits,
+  }));
 
-  return <TabbedWidget title="Technology" tabs={tabs} />;
+  const topOSData = summary.getTopOS().map(os => ({
+    name: os.name,
+    visits: os.visits,
+    hits: os.hits,
+  }));
+
+  const topDevicesData = summary.getTopDevices().map(device => ({
+    name: device.name,
+    visits: device.visits,
+    hits: device.hits,
+  }));
+
+  return (
+    <TabbedWidget
+      title="Technology"
+      tabs={[
+        {
+          name: 'Browsers',
+          content: (
+            <BarList
+              data={topBrowsersData}
+              index="name"
+              categories={['visits']}
+            />
+          ),
+        },
+        {
+          name: 'OS',
+          content: (
+            <BarList
+              data={topOSData}
+              index="name"
+              categories={['visits']}
+            />
+          ),
+        },
+        {
+          name: 'Devices',
+          content: (
+            <BarList
+              data={topDevicesData}
+              index="name"
+              categories={['visits']}
+            />
+          ),
+        },
+      ]}
+    />
+  );
 } 

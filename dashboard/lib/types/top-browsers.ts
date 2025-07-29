@@ -1,16 +1,7 @@
-import { Color } from '@tremor/react'
-
-export type BrowserType = 'chrome' | 'firefox' | 'safari' | 'opera' | 'ie'
-
-export type TopBrowsersData = {
-  browser: BrowserType
+export interface TopBrowser {
+  name: string
   visits: number
-  hits: number
-}
-
-export type TopBrowser = {
-  browser: string
-  visits: number
+  color: string
 }
 
 export type TopBrowsers = {

@@ -1,3 +1,5 @@
+import { NextRequest, NextResponse } from 'next/server'
+
 const DATASOURCE = 'analytics_events_api';
 const MAX_PAYLOAD_SIZE = 10 * 1024; // 10KB limit
 
@@ -5,9 +7,9 @@ const MAX_PAYLOAD_SIZE = 10 * 1024; // 10KB limit
  * Get client IP address from request headers
  */
 const getClientIP = (req) => {
-    const forwarded = req.headers['x-forwarded-for'];
-    const realIp = req.headers['x-real-ip'];
-    const cfConnectingIp = req.headers['cf-connecting-ip'];
+    const forwarded = req.headers.get('x-forwarded-for');
+    const realIp = req.headers.get('x-real-ip');
+    const cfConnectingIp = req.headers.get('cf-connecting-ip');
     
     let ip = '0.0.0.0';
     
@@ -18,7 +20,7 @@ const getClientIP = (req) => {
     } else if (cfConnectingIp) {
         ip = cfConnectingIp;
     } else {
-        ip = req.socket.remoteAddress || '0.0.0.0';
+        ip = '0.0.0.0'; // Can't get socket.remoteAddress in app router
     }
     
     // Convert IPv6 localhost to IPv4
@@ -38,7 +40,6 @@ const getClientIP = (req) => {
  * Enhanced bot detection based on headers and patterns
  */
 const detectServerSideBot = (req, userAgent) => {
-    const headers = req.headers;
     const ua = (userAgent || '').toLowerCase();
     
     // Check for explicit bot patterns in user agent
@@ -55,7 +56,7 @@ const detectServerSideBot = (req, userAgent) => {
     }
     
     // Check for suspicious bot indicators (but be less aggressive)
-    if (headers['x-forwarded-for']?.includes('googlebot') ||
+    if (req.headers.get('x-forwarded-for')?.includes('googlebot') ||
         (!userAgent || userAgent.length < 10)) {
         return { bot: 1, bot_reason: 'Suspicious bot indicators' };
     }
@@ -191,56 +192,72 @@ const isRateLimited = (ip) => {
     return false;
 };
 
-export default async function handler(req, res) {
-    // Set CORS headers for all requests
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Origin', process.env.CORS_ALLOW_ORIGIN || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Cache-Control', 'no-store');
+// CORS headers helper
+const corsHeaders = {
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Origin': process.env.CORS_ALLOW_ORIGIN || '*',
+    'Access-Control-Allow-Methods': 'OPTIONS,POST',
+    'Access-Control-Allow-Headers': 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version',
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store',
+};
 
-    // Handle preflight requests
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
+// Handle OPTIONS requests (preflight)
+export async function OPTIONS() {
+    return new NextResponse(null, {
+        status: 200,
+        headers: corsHeaders,
+    });
+}
 
+// Handle POST requests
+export async function POST(req) {
     try {
-        // Only allow POST method
-        if (req.method !== 'POST') {
-            return res.status(405).json({ error: 'Method not allowed' });
-        }
-        
         // Check content length
-        const contentLength = parseInt(req.headers['content-length'] || '0');
+        const contentLength = parseInt(req.headers.get('content-length') || '0');
         if (contentLength > MAX_PAYLOAD_SIZE) {
-            return res.status(413).json({ error: 'Payload too large' });
+            return NextResponse.json(
+                { error: 'Payload too large' },
+                { status: 413, headers: corsHeaders }
+            );
         }
         
         // Rate limiting
         const clientIP = getClientIP(req);
         if (isRateLimited(clientIP)) {
-            return res.status(429).json({ error: 'Rate limit exceeded' });
+            return NextResponse.json(
+                { error: 'Rate limit exceeded' },
+                { status: 429, headers: corsHeaders }
+            );
         }
         
         // Parse and validate JSON
         let eventData;
         try {
-            eventData = req.body; // Next.js automatically parses JSON
+            eventData = await req.json();
             if (!eventData) {
                 throw new Error('No data received');
             }
         } catch (error) {
-            return res.status(400).json({ error: 'Invalid JSON' });
+            return NextResponse.json(
+                { error: 'Invalid JSON' },
+                { status: 400, headers: corsHeaders }
+            );
         }
         
         // Process the event
         await _postEvent(eventData, req);
         
-        return res.status(200).json({ status: 'ok' });
+        return NextResponse.json(
+            { status: 'ok' },
+            { status: 200, headers: corsHeaders }
+        );
         
     } catch (error) {
         console.error('Tracking API error:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500, headers: corsHeaders }
+        );
     }
-}; 
+} 

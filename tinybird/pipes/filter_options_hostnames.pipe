@@ -1,0 +1,27 @@
+DESCRIPTION >
+    Returns distinct hostnames available for filtering.
+    Supports search parameter to filter results.
+    Requires `site_id` parameter for multi-tenant data filtering.
+
+TOKEN "dashboard" READ
+
+NODE endpoint
+DESCRIPTION >
+    Get distinct hostnames with visitor counts
+
+SQL >
+    %
+    SELECT 
+        hostname as value,
+        count(*) as count
+    FROM analytics_hits 
+    WHERE toDate(timestamp) >= toDate({{ Date(date_from) }})
+        AND toDate(timestamp) <= toDate({{ Date(date_to) }})
+        {% if defined(site_id) %} AND site_id = {{ String(site_id, description="Site ID for multi-tenant filtering", required=True) }}{% end %}
+        {% if defined(search) %} AND hostname ILIKE {{ String(search, description="Search term to filter hostnames") }}{% end %}
+        AND hostname != ''
+    GROUP BY hostname
+    ORDER BY count DESC, hostname ASC
+    LIMIT 200
+
+TYPE endpoint 
