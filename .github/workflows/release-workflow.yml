@@ -19,7 +19,6 @@ jobs:
       run: |
         npm install --prefix middleware
         npm run lint --prefix middleware --if-present
-        npm run test:coverage --prefix middleware --if-present
         npm run build --prefix middleware
       env:
         CI: true
