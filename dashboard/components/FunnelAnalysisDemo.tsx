@@ -192,12 +192,6 @@ const FunnelAnalysisDemo: React.FC = () => {
         <Card>
           <h2 className="text-lg font-semibold text-red-600">Error Loading Funnel Data</h2>
           <p className="mt-2 text-red-500">{error.message}</p>
-          <div className="mt-4 p-4 bg-red-50 rounded-md">
-            <p className="text-sm text-red-700">
-              This might be expected if you don't have data matching the funnel steps yet. 
-              The enhanced funnel system is working correctly - it's just waiting for matching data.
-            </p>
-          </div>
         </Card>
       )}
 

@@ -548,3 +548,45 @@ Create `resources/views/livewire/site/partials/funnels-tab.blade.php`:
 4. **Phase 4**: Add advanced filtering and session analysis
 
 This implementation leverages your existing solid foundation while adding enterprise-grade analytics capabilities that match and exceed the Next.js dashboard functionality!
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. "Unknown expression or function identifier `site_id`" Error
+
+**Problem**: You receive an error like:
+```
+Unknown expression or function identifier `site_id` in scope SELECT * from dashboard_summary
+```
+
+**Cause**: The `site_id` parameter is not being passed from your Laravel application to the Tinybird API.
+
+**Solution**: Ensure all AnalyticsService methods pass the `site_id` parameter:
+```php
+// ❌ Wrong - missing site_id
+$analyticsService->getKpis($dateFrom, $dateTo);
+
+// ✅ Correct - includes site_id
+$analyticsService->getKpis($dateFrom, $dateTo, $this->site->id);
+```
+
+#### 2. Missing `site_id` Column in Custom Events
+
+**Problem**: The `analytics_custom_events` datasource is missing the `site_id` column, breaking multi-tenant filtering.
+
+**Solution**: Ensure the datasource schema includes `site_id`:
+```sql
+SCHEMA >
+    `timestamp` DateTime,
+    `client_id` UInt64,
+    `site_id` String,  -- This column is required
+    `visitor_id` UInt64,
+    -- ... other columns
+```
+
+And ensure the `process_custom_events.pipe` selects this column in all nodes.
+
+---
+
+**Next Steps**: Return to [Development Guide](#development-guide) | [Testing Strategy](#testing-strategy)
