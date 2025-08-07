@@ -4,6 +4,7 @@ DESCRIPTION >
 SCHEMA >
     `timestamp` DateTime,
     `client_id` UInt64,
+    `site_id` String,
     `visitor_id` UInt64,
     `session_id` String,
     `event_name` String,
@@ -36,6 +37,6 @@ SCHEMA >
 
 ENGINE MergeTree
 ENGINE_PARTITION_KEY toYYYYMM(timestamp)
-ENGINE_SORTING_KEY timestamp, client_id, visitor_id, event_name
+ENGINE_SORTING_KEY timestamp, site_id, client_id, visitor_id, event_name
 ENGINE_TTL timestamp + toIntervalDay(60)
 ENGINE_SAMPLING_KEY visitor_id 

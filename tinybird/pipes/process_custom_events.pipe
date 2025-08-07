@@ -11,6 +11,7 @@ SQL >
     SELECT
         timestamp,
         coalesce(client_id, 0) as client_id,
+        site_id,
         coalesce(visitor_id, 0) as visitor_id,
         session_id,
         event_name,
@@ -55,6 +56,7 @@ SQL >
     SELECT
         timestamp,
         client_id,
+        site_id,
         visitor_id,
         session_id,
         event_name,

@@ -307,7 +307,7 @@ SQL >
         {% end %}
         {% if defined(site_id) %} AND site_id = {{ String(site_id, description="Site ID for multi-tenant filtering", required=True) }}{% end %}
         {% if defined(hostname) %} AND hostname IN ({{ Array(hostname, 'String', description="Filter by hostname", required=False) }}){% end %}
-        {% if defined(country) %} AND country IN ({{ Array(country, 'String', description="Filter by country", required=False) }}){% end %}
+        {% if defined(country) %} AND country_code IN ({{ Array(country, 'String', description="Filter by country", required=False) }}){% end %}
         {% if defined(region) %} AND region IN ({{ Array(region, 'String', description="Filter by region", required=False) }}){% end %}
         {% if defined(city) %} AND city IN ({{ Array(city, 'String', description="Filter by city", required=False) }}){% end %}
         {% if defined(language) %} AND language IN ({{ Array(language, 'String', description="Filter by language", required=False) }}){% end %}
