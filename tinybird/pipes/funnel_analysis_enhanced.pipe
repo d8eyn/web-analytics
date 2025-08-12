@@ -1,18 +1,19 @@
 DESCRIPTION >
     Enhanced funnel analysis with reference-style filtering and unlimited steps.
     Supports regex patterns, event metadata, geographic/technology filters, and UTM tracking.
-    Optimized for performance with single-pass array-based processing.
+    Redesigned to properly handle identical step criteria through sequential progression tracking.
 
 TOKEN "dashboard" READ
 
 NODE endpoint
 DESCRIPTION >
-    Enhanced funnel analysis supporting up to 8 steps with comprehensive filtering - optimized version
+    Enhanced funnel analysis supporting up to 8 steps with comprehensive filtering - fixed for identical steps
 
 SQL >
     %
     WITH 
-    -- Unified events with efficient column selection
+    -- Get all events, but only for visitors who could potentially complete the funnel
+    -- Apply geographic/technology filters from step 1 to reduce data scanned
     all_events AS (
         SELECT 
             visitor_id,
@@ -35,6 +36,34 @@ SQL >
           AND toDate(timestamp) <= {{ Date(date_to, '2024-12-31', description="End date") }}
           {% if defined(site_id) %}
             AND site_id = {{ String(site_id, '', description="Site ID") }}
+          {% end %}
+          -- Apply step 1 demographic/technology filters to reduce data scanned
+          {% if defined(step1_country) %}
+            AND country_code = {{ String(step1_country, '') }}
+          {% end %}
+          {% if defined(step1_region) %}
+            AND region = {{ String(step1_region, '') }}
+          {% end %}
+          {% if defined(step1_language) %}
+            AND language = {{ String(step1_language, '') }}
+          {% end %}
+          {% if defined(step1_os) %}
+            AND os = {{ String(step1_os, '') }}
+          {% end %}
+          {% if defined(step1_browser) %}
+            AND browser = {{ String(step1_browser, '') }}
+          {% end %}
+          {% if defined(step1_platform) %}
+            AND device = {{ String(step1_platform, '') }}
+          {% end %}
+          {% if defined(step1_utm_source) %}
+            AND utm_source = {{ String(step1_utm_source, '') }}
+          {% end %}
+          {% if defined(step1_utm_medium) %}
+            AND utm_medium = {{ String(step1_utm_medium, '') }}
+          {% end %}
+          {% if defined(step1_referrer_name) %}
+            AND referrer_name = {{ String(step1_referrer_name, '') }}
           {% end %}
         
         UNION ALL
@@ -59,145 +88,185 @@ SQL >
         WHERE toDate(timestamp) >= {{ Date(date_from, '2024-01-01') }}
           AND toDate(timestamp) <= {{ Date(date_to, '2024-12-31') }}
           {% if defined(site_id) %}
-            AND site_id = {{ String(site_id, '', description="Site ID") }}
+            AND site_id = {{ String(site_id, '') }}
+          {% end %}
+          -- Apply step 1 demographic/technology filters
+          {% if defined(step1_country) %}
+            AND country_code = {{ String(step1_country, '') }}
+          {% end %}
+          {% if defined(step1_region) %}
+            AND region = {{ String(step1_region, '') }}
+          {% end %}
+          {% if defined(step1_language) %}
+            AND language = {{ String(step1_language, '') }}
+          {% end %}
+          {% if defined(step1_os) %}
+            AND os = {{ String(step1_os, '') }}
+          {% end %}
+          {% if defined(step1_browser) %}
+            AND browser = {{ String(step1_browser, '') }}
+          {% end %}
+          {% if defined(step1_platform) %}
+            AND multiIf(desktop = 1, 'desktop', mobile = 1, 'mobile', 'unknown') = {{ String(step1_platform, '') }}
+          {% end %}
+          {% if defined(step1_utm_source) %}
+            AND utm_source = {{ String(step1_utm_source, '') }}
+          {% end %}
+          {% if defined(step1_utm_medium) %}
+            AND utm_medium = {{ String(step1_utm_medium, '') }}
+          {% end %}
+          {% if defined(step1_referrer_name) %}
+            AND referrer_name = {{ String(step1_referrer_name, '') }}
           {% end %}
     ),
     
-    -- Single-pass step identification using enhanced multiIf
-    events_with_steps AS (
+    -- Check which steps each event COULD match (not exclusive assignment)
+    events_with_potential_steps AS (
         SELECT 
             visitor_id,
             timestamp,
-            multiIf(
-                -- Step 1 matching
-                (
-                    ({{ String(step1_path_exact, '') }} != '' AND path = {{ String(step1_path_exact, '') }}) OR
-                    ({{ String(step1_path_pattern, '') }} != '' AND path LIKE {{ String(step1_path_pattern, '') }}) OR
-                    ({{ String(step1_path_regex, '') }} != '' AND match(path, {{ String(step1_path_regex, '') }})) OR
-                    ({{ String(step1_event_name, '') }} != '' AND event_name = {{ String(step1_event_name, '') }})
-                ) AND (
-                    ({{ String(step1_country, '') }} = '' OR country_code = {{ String(step1_country, '') }}) AND
-                    ({{ String(step1_region, '') }} = '' OR region = {{ String(step1_region, '') }}) AND
-                    ({{ String(step1_language, '') }} = '' OR language = {{ String(step1_language, '') }}) AND
-                    ({{ String(step1_os, '') }} = '' OR os = {{ String(step1_os, '') }}) AND
-                    ({{ String(step1_browser, '') }} = '' OR browser = {{ String(step1_browser, '') }}) AND
-                    ({{ String(step1_platform, '') }} = '' OR device = {{ String(step1_platform, '') }}) AND
-                    ({{ String(step1_utm_source, '') }} = '' OR utm_source = {{ String(step1_utm_source, '') }}) AND
-                    ({{ String(step1_utm_medium, '') }} = '' OR utm_medium = {{ String(step1_utm_medium, '') }}) AND
-                    ({{ String(step1_referrer_name, '') }} = '' OR referrer_name = {{ String(step1_referrer_name, '') }})
-                ), 1,
-                
-                -- Step 2 matching (only if step 2 is defined)
-                ({{ String(step2_path_exact, '') }} != '' OR {{ String(step2_path_pattern, '') }} != '' OR {{ String(step2_path_regex, '') }} != '' OR {{ String(step2_event_name, '') }} != '') AND
-                (
-                    ({{ String(step2_path_exact, '') }} != '' AND path = {{ String(step2_path_exact, '') }}) OR
-                    ({{ String(step2_path_pattern, '') }} != '' AND path LIKE {{ String(step2_path_pattern, '') }}) OR
-                    ({{ String(step2_path_regex, '') }} != '' AND match(path, {{ String(step2_path_regex, '') }})) OR
-                    ({{ String(step2_event_name, '') }} != '' AND event_name = {{ String(step2_event_name, '') }})
-                ) AND (
-                    ({{ String(step2_country, '') }} = '' OR country_code = {{ String(step2_country, '') }}) AND
-                    ({{ String(step2_os, '') }} = '' OR os = {{ String(step2_os, '') }}) AND
-                    ({{ String(step2_browser, '') }} = '' OR browser = {{ String(step2_browser, '') }}) AND
-                    ({{ String(step2_platform, '') }} = '' OR device = {{ String(step2_platform, '') }}) AND
-                    ({{ String(step2_utm_source, '') }} = '' OR utm_source = {{ String(step2_utm_source, '') }})
-                ), 2,
-                
-                -- Step 3 matching (only if step 3 is defined)
-                ({{ String(step3_path_exact, '') }} != '' OR {{ String(step3_path_pattern, '') }} != '' OR {{ String(step3_path_regex, '') }} != '' OR {{ String(step3_event_name, '') }} != '') AND
-                (
-                    ({{ String(step3_path_exact, '') }} != '' AND path = {{ String(step3_path_exact, '') }}) OR
-                    ({{ String(step3_path_pattern, '') }} != '' AND path LIKE {{ String(step3_path_pattern, '') }}) OR
-                    ({{ String(step3_path_regex, '') }} != '' AND match(path, {{ String(step3_path_regex, '') }})) OR
-                    ({{ String(step3_event_name, '') }} != '' AND event_name = {{ String(step3_event_name, '') }})
-                ) AND (
-                    ({{ String(step3_country, '') }} = '' OR country_code = {{ String(step3_country, '') }}) AND
-                    ({{ String(step3_os, '') }} = '' OR os = {{ String(step3_os, '') }}) AND
-                    ({{ String(step3_browser, '') }} = '' OR browser = {{ String(step3_browser, '') }}) AND
-                    ({{ String(step3_platform, '') }} = '' OR device = {{ String(step3_platform, '') }}) AND
-                    ({{ String(step3_utm_source, '') }} = '' OR utm_source = {{ String(step3_utm_source, '') }})
-                ), 3,
-                
-                -- Step 4 matching (only if step 4 is defined)
-                ({{ String(step4_path_exact, '') }} != '' OR {{ String(step4_path_pattern, '') }} != '' OR {{ String(step4_path_regex, '') }} != '' OR {{ String(step4_event_name, '') }} != '') AND
-                (
-                    ({{ String(step4_path_exact, '') }} != '' AND path = {{ String(step4_path_exact, '') }}) OR
-                    ({{ String(step4_path_pattern, '') }} != '' AND path LIKE {{ String(step4_path_pattern, '') }}) OR
-                    ({{ String(step4_path_regex, '') }} != '' AND match(path, {{ String(step4_path_regex, '') }})) OR
-                    ({{ String(step4_event_name, '') }} != '' AND event_name = {{ String(step4_event_name, '') }})
-                ) AND (
-                    ({{ String(step4_country, '') }} = '' OR country_code = {{ String(step4_country, '') }}) AND
-                    ({{ String(step4_os, '') }} = '' OR os = {{ String(step4_os, '') }}) AND
-                    ({{ String(step4_browser, '') }} = '' OR browser = {{ String(step4_browser, '') }}) AND
-                    ({{ String(step4_platform, '') }} = '' OR device = {{ String(step4_platform, '') }}) AND
-                    ({{ String(step4_utm_source, '') }} = '' OR utm_source = {{ String(step4_utm_source, '') }})
-                ), 4,
-                
-                0
-            ) as step_num
+            -- Step 1 match check
+            CASE WHEN (
+                ({{ String(step1_path_exact, '') }} != '' AND path = {{ String(step1_path_exact, '') }}) OR
+                ({{ String(step1_path_regex, '') }} != '' AND match(path, {{ String(step1_path_regex, '') }})) OR
+                ({{ String(step1_event_name, '') }} != '' AND event_name = {{ String(step1_event_name, '') }})
+            ) AND (
+                ({{ String(step1_country, '') }} = '' OR country_code = {{ String(step1_country, '') }}) AND
+                ({{ String(step1_region, '') }} = '' OR region = {{ String(step1_region, '') }}) AND
+                ({{ String(step1_language, '') }} = '' OR language = {{ String(step1_language, '') }}) AND
+                ({{ String(step1_os, '') }} = '' OR os = {{ String(step1_os, '') }}) AND
+                ({{ String(step1_browser, '') }} = '' OR browser = {{ String(step1_browser, '') }}) AND
+                ({{ String(step1_platform, '') }} = '' OR device = {{ String(step1_platform, '') }}) AND
+                ({{ String(step1_utm_source, '') }} = '' OR utm_source = {{ String(step1_utm_source, '') }}) AND
+                ({{ String(step1_utm_medium, '') }} = '' OR utm_medium = {{ String(step1_utm_medium, '') }}) AND
+                ({{ String(step1_referrer_name, '') }} = '' OR referrer_name = {{ String(step1_referrer_name, '') }})
+            ) THEN 1 ELSE 0 END as matches_step1,
+            
+            -- Step 2 match check (only if step 2 is defined)
+            CASE WHEN ({{ String(step2_path_exact, '') }} != '' OR {{ String(step2_path_regex, '') }} != '' OR {{ String(step2_event_name, '') }} != '') AND (
+                ({{ String(step2_path_exact, '') }} != '' AND path = {{ String(step2_path_exact, '') }}) OR
+                ({{ String(step2_path_regex, '') }} != '' AND match(path, {{ String(step2_path_regex, '') }})) OR
+                ({{ String(step2_event_name, '') }} != '' AND event_name = {{ String(step2_event_name, '') }})
+            ) AND (
+                ({{ String(step2_country, '') }} = '' OR country_code = {{ String(step2_country, '') }}) AND
+                ({{ String(step2_os, '') }} = '' OR os = {{ String(step2_os, '') }}) AND
+                ({{ String(step2_browser, '') }} = '' OR browser = {{ String(step2_browser, '') }}) AND
+                ({{ String(step2_platform, '') }} = '' OR device = {{ String(step2_platform, '') }}) AND
+                ({{ String(step2_utm_source, '') }} = '' OR utm_source = {{ String(step2_utm_source, '') }})
+            ) THEN 1 ELSE 0 END as matches_step2,
+            
+            -- Step 3 match check (only if step 3 is defined)
+            CASE WHEN ({{ String(step3_path_exact, '') }} != '' OR {{ String(step3_path_regex, '') }} != '' OR {{ String(step3_event_name, '') }} != '') AND (
+                ({{ String(step3_path_exact, '') }} != '' AND path = {{ String(step3_path_exact, '') }}) OR
+                ({{ String(step3_path_regex, '') }} != '' AND match(path, {{ String(step3_path_regex, '') }})) OR
+                ({{ String(step3_event_name, '') }} != '' AND event_name = {{ String(step3_event_name, '') }})
+            ) AND (
+                ({{ String(step3_country, '') }} = '' OR country_code = {{ String(step3_country, '') }}) AND
+                ({{ String(step3_os, '') }} = '' OR os = {{ String(step3_os, '') }}) AND
+                ({{ String(step3_browser, '') }} = '' OR browser = {{ String(step3_browser, '') }}) AND
+                ({{ String(step3_platform, '') }} = '' OR device = {{ String(step3_platform, '') }}) AND
+                ({{ String(step3_utm_source, '') }} = '' OR utm_source = {{ String(step3_utm_source, '') }})
+            ) THEN 1 ELSE 0 END as matches_step3,
+            
+            -- Step 4 match check (only if step 4 is defined)
+            CASE WHEN ({{ String(step4_path_exact, '') }} != '' OR {{ String(step4_path_regex, '') }} != '' OR {{ String(step4_event_name, '') }} != '') AND (
+                ({{ String(step4_path_exact, '') }} != '' AND path = {{ String(step4_path_exact, '') }}) OR
+                ({{ String(step4_path_regex, '') }} != '' AND match(path, {{ String(step4_path_regex, '') }})) OR
+                ({{ String(step4_event_name, '') }} != '' AND event_name = {{ String(step4_event_name, '') }})
+            ) AND (
+                ({{ String(step4_country, '') }} = '' OR country_code = {{ String(step4_country, '') }}) AND
+                ({{ String(step4_os, '') }} = '' OR os = {{ String(step4_os, '') }}) AND
+                ({{ String(step4_browser, '') }} = '' OR browser = {{ String(step4_browser, '') }}) AND
+                ({{ String(step4_platform, '') }} = '' OR device = {{ String(step4_platform, '') }}) AND
+                ({{ String(step4_utm_source, '') }} = '' OR utm_source = {{ String(step4_utm_source, '') }})
+            ) THEN 1 ELSE 0 END as matches_step4
         FROM all_events
-        WHERE step_num > 0
+        WHERE matches_step1 = 1 OR matches_step2 = 1 OR matches_step3 = 1 OR matches_step4 = 1
         ORDER BY visitor_id, timestamp
     ),
     
-    -- Visitor journey aggregation using arrays
-    visitor_journeys AS (
+    -- Track sequential progression through the funnel
+    visitor_progression AS (
         SELECT 
             visitor_id,
-            groupArray(step_num) as steps,
-            groupArray(timestamp) as timestamps
-        FROM events_with_steps
+            -- For each visitor, find when they FIRST complete each step
+            min(CASE WHEN matches_step1 = 1 THEN timestamp ELSE NULL END) as first_step1_event,
+            minIf(timestamp, matches_step2 = 1) as first_step2_event,
+            minIf(timestamp, matches_step3 = 1) as first_step3_event,
+            minIf(timestamp, matches_step4 = 1) as first_step4_event
+        FROM events_with_potential_steps
         GROUP BY visitor_id
     ),
     
-    -- Step progression analysis with array functions
-    step_progression AS (
+    -- Determine actual step completions based on sequential order
+    step_completions AS (
         SELECT 
             visitor_id,
-            arrayFirstIndex(x -> x = 1, steps) as s1,
-            arrayFirstIndex(x -> x = 2, steps) as s2,
-            arrayFirstIndex(x -> x = 3, steps) as s3,
-            arrayFirstIndex(x -> x = 4, steps) as s4
-        FROM visitor_journeys
-        WHERE arrayFirstIndex(x -> x = 1, steps) > 0
+            -- Step 1: completed if they have any matching event
+            CASE WHEN first_step1_event IS NOT NULL THEN 1 ELSE 0 END as completed_step1,
+            
+            -- Step 2: completed if they have a step2 event at or after step1
+            CASE WHEN first_step1_event IS NOT NULL 
+                 AND first_step2_event IS NOT NULL 
+                 AND first_step2_event >= first_step1_event 
+            THEN 1 ELSE 0 END as completed_step2,
+            
+            -- Step 3: completed if they have a step3 event at or after step2 completion
+            -- Note: if step2 and step3 have same criteria, the same event counts for both
+            CASE WHEN first_step1_event IS NOT NULL 
+                 AND first_step2_event IS NOT NULL 
+                 AND first_step2_event >= first_step1_event
+                 AND first_step3_event IS NOT NULL
+                 AND first_step3_event >= first_step2_event
+            THEN 1 ELSE 0 END as completed_step3,
+            
+            -- Step 4: completed if they have a step4 event at or after step3 completion
+            -- Note: if step3 and step4 have same criteria, the same event counts for both
+            CASE WHEN first_step1_event IS NOT NULL 
+                 AND first_step2_event IS NOT NULL 
+                 AND first_step2_event >= first_step1_event
+                 AND first_step3_event IS NOT NULL
+                 AND first_step3_event >= first_step2_event
+                 AND first_step4_event IS NOT NULL
+                 AND first_step4_event >= first_step3_event
+            THEN 1 ELSE 0 END as completed_step4
+        FROM visitor_progression
     ),
     
-    -- Funnel metrics calculation
+    -- Calculate funnel metrics
     funnel_metrics AS (
-        SELECT 1 as step, count(*) as visitors FROM step_progression
+        SELECT 1 as step, sum(completed_step1) as visitors 
+        FROM step_completions
+        WHERE completed_step1 = 1
+        
         UNION ALL
-        SELECT 2 as step, countIf(s1 > 0 AND s2 > 0 AND s2 > s1) as visitors FROM step_progression
-        WHERE ({{ String(step2_path_exact, '') }} != '' OR {{ String(step2_path_pattern, '') }} != '' OR {{ String(step2_path_regex, '') }} != '' OR {{ String(step2_event_name, '') }} != '')
-        UNION ALL  
-        SELECT 3 as step, countIf(s1 > 0 AND s2 > 0 AND s3 > 0 AND s3 > s2 AND s2 > s1) as visitors FROM step_progression
-        WHERE ({{ String(step3_path_exact, '') }} != '' OR {{ String(step3_path_pattern, '') }} != '' OR {{ String(step3_path_regex, '') }} != '' OR {{ String(step3_event_name, '') }} != '')
+        
+        SELECT 2 as step, sum(completed_step2) as visitors 
+        FROM step_completions
+        WHERE completed_step1 = 1
+          AND ({{ String(step2_path_exact, '') }} != '' OR {{ String(step2_path_regex, '') }} != '' OR {{ String(step2_event_name, '') }} != '')
+        
         UNION ALL
-        SELECT 4 as step, countIf(s1 > 0 AND s2 > 0 AND s3 > 0 AND s4 > 0 AND s4 > s3 AND s3 > s2 AND s2 > s1) as visitors FROM step_progression
-        WHERE ({{ String(step4_path_exact, '') }} != '' OR {{ String(step4_path_pattern, '') }} != '' OR {{ String(step4_path_regex, '') }} != '' OR {{ String(step4_event_name, '') }} != '')
+        
+        SELECT 3 as step, sum(completed_step3) as visitors 
+        FROM step_completions
+        WHERE completed_step1 = 1
+          AND ({{ String(step3_path_exact, '') }} != '' OR {{ String(step3_path_regex, '') }} != '' OR {{ String(step3_event_name, '') }} != '')
+        
+        UNION ALL
+        
+        SELECT 4 as step, sum(completed_step4) as visitors 
+        FROM step_completions
+        WHERE completed_step1 = 1
+          AND ({{ String(step4_path_exact, '') }} != '' OR {{ String(step4_path_regex, '') }} != '' OR {{ String(step4_event_name, '') }} != '')
     )
     
-    -- Final funnel metrics with self-join for previous step data
+    -- Final output - just step and visitor count
     SELECT 
-        f.step,
-        f.visitors,
-        CASE WHEN (SELECT visitors FROM funnel_metrics WHERE step = 1) > 0 
-             THEN round(f.visitors / (SELECT visitors FROM funnel_metrics WHERE step = 1), 4) 
-             ELSE 0 END as relative_visitors,
-        COALESCE(prev.visitors, 0) as previous_visitors,
-        CASE WHEN COALESCE(prev.visitors, 0) > 0 AND f.step > 1 
-             THEN round(f.visitors / prev.visitors, 4) 
-             ELSE 0 END as relative_previous_visitors,
-        CASE WHEN f.step > 1 
-             THEN COALESCE(prev.visitors, 0) - f.visitors 
-             ELSE 0 END as dropped,
-        CASE WHEN COALESCE(prev.visitors, 0) > 0 AND f.step > 1 
-             THEN round(1 - (f.visitors / prev.visitors), 4) 
-             ELSE 0 END as drop_off,
-        CASE WHEN (SELECT visitors FROM funnel_metrics WHERE step = 1) > 0 
-             THEN round(f.visitors / (SELECT visitors FROM funnel_metrics WHERE step = 1), 4) 
-             ELSE 0 END as conversion_rate
-    FROM funnel_metrics f
-    LEFT JOIN funnel_metrics prev ON prev.step = f.step - 1
-    WHERE f.visitors > 0 OR f.step = 1
-    ORDER BY f.step
+        step,
+        visitors
+    FROM funnel_metrics
+    WHERE visitors > 0 OR step = 1
+    ORDER BY step
 
 TYPE endpoint 

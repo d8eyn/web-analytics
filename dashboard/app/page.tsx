@@ -99,12 +99,10 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <button
-                    onClick={() => setShowEnhancedDemo(!showEnhancedDemo)}
+                    onClick={() => window.location.assign('/funnel')}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                   >
-                    {showEnhancedDemo
-                      ? 'Show Main Dashboard'
-                      : 'Try Enhanced Funnels'}
+                    Try Enhanced Funnels
                   </button>
                 </div>
               </div>

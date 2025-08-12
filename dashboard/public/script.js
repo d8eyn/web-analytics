@@ -478,9 +478,6 @@
     trackPageHit: _trackPageHit,
     trackPageTags: _trackPageTags,
     
-    // Backward compatibility
-    trackEvent: _sendEvent,
-    
     // Utility functions
     getClientId: _getClientId,
     getVisitorId: _getVisitorId,
