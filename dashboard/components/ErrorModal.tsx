@@ -7,7 +7,7 @@ import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 // Simple Button component replacement
 function Button({ children, onClick, className = '', variant = 'primary', ...props }: any) {
   const baseClasses = 'px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors'
-  const variantClasses = {
+  const variantClasses: Record<string, string> = {
     primary: 'bg-primary text-white hover:bg-primary-dark focus:ring-primary',
     secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
@@ -16,7 +16,7 @@ function Button({ children, onClick, className = '', variant = 'primary', ...pro
   return (
     <button 
       onClick={onClick}
-      className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+      className={`${baseClasses} ${variantClasses[variant] || variantClasses.primary} ${className}`}
       {...props}
     >
       {children}

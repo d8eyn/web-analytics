@@ -37,15 +37,21 @@ function buildFunnelParams(config: FunnelConfig, dateFrom?: string, dateTo?: str
     if (stepNum > 4) return;
     
     if (step.pathPattern) {
-      params[`step${stepNum}_path_pattern`] = step.pathPattern;
+      params[`step${stepNum}_path_pattern`] = Array.isArray(step.pathPattern) 
+        ? step.pathPattern.join(',') 
+        : step.pathPattern;
     }
     
-    if (step.pathExact) {
-      params[`step${stepNum}_path_exact`] = step.pathExact;
+    if (step.path) {
+      params[`step${stepNum}_path_exact`] = Array.isArray(step.path) 
+        ? step.path.join(',') 
+        : step.path;
     }
     
     if (step.eventName) {
-      params[`step${stepNum}_event_name`] = step.eventName;
+      params[`step${stepNum}_event_name`] = Array.isArray(step.eventName) 
+        ? step.eventName.join(',') 
+        : step.eventName;
     }
     
     // Add event metadata if specified
@@ -110,6 +116,9 @@ async function getFunnelData(
   const totalVisitors = steps.length > 0 ? steps[0].visitors : 0;
   const finalStep = steps[steps.length - 1];
   const overallConversionRate = finalStep ? finalStep.conversionRate : 0;
+  const completionRate = finalStep && totalVisitors > 0 
+    ? (finalStep.visitors / totalVisitors) * 100 
+    : 0;
   
   return {
     funnelId: config.id,
@@ -117,6 +126,8 @@ async function getFunnelData(
     totalVisitors,
     steps,
     overallConversionRate,
+    totalSteps: steps.length,
+    completionRate,
     dateRange: {
       from: dateFrom || '',
       to: dateTo || '',

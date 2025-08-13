@@ -137,41 +137,86 @@ const enrichTrackingData = (data, req) => {
 };
 
 /**
- * Post event to Tinybird HFI with enhanced data
+ * Post event to Tinybird Events API with enhanced data
+ * Using the Events API for better rate limits and performance
  */
 const _postEvent = async (event, req) => {
     const enrichedEvent = enrichTrackingData(event, req);
     
+    // Events API expects NDJSON format (newline-delimited JSON)
+    // Each event should be on its own line
+    const ndjsonBody = JSON.stringify(enrichedEvent) + '\n';
+    
     const options = {
-        method: 'post',
-        body: JSON.stringify(enrichedEvent),
+        method: 'POST',
+        body: ndjsonBody,
         headers: {
             'Authorization': `Bearer ${process.env.TINYBIRD_TOKEN}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/x-ndjson'
         }
     };
     
     // Use the correct regional endpoint from environment
     const tinybirdHost = process.env.TINYBIRD_HOST || process.env.NEXT_PUBLIC_TINYBIRD_HOST || 'https://api.tinybird.co';
-    const response = await fetch(`${tinybirdHost}/v0/datasources?name=${DATASOURCE}&mode=append&format=ndjson`, options);
     
+    // Using Events API endpoint for better rate limits (100 req/s default vs lower for datasources API)
+    // wait=false for async processing (202 response) - faster but no immediate acknowledgment
+    // wait=true for sync processing (200 response) - slower but guaranteed write acknowledgment
+    const waitForAck = process.env.TINYBIRD_WAIT_FOR_ACK === 'true' ? 'true' : 'false';
+    const response = await fetch(`${tinybirdHost}/v0/events?name=${DATASOURCE}&wait=${waitForAck}`, options);
+    
+    // Handle Events API specific status codes
     if (!response.ok) {
         const errorText = await response.text();
-        console.log('Tinybird error response:', errorText);
-        throw new Error(`Tinybird error: ${response.statusText} - ${errorText}`);
+        console.error('Tinybird Events API error:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorText
+        });
+        
+        // Handle specific error codes according to Events API documentation
+        switch (response.status) {
+            case 400:
+                throw new Error(`Invalid request (missing parameters): ${errorText}`);
+            case 403:
+                throw new Error(`Invalid token: ${errorText}`);
+            case 404:
+                throw new Error(`Workspace not found or wrong region: ${errorText}`);
+            case 422:
+                // Partial ingestion due to Materialized View error
+                console.warn('Partial ingestion completed - MV error:', errorText);
+                return { status: 'partial', error: errorText };
+            case 429:
+                throw new Error(`Rate limit exceeded (100 req/s): ${errorText}`);
+            case 500:
+                throw new Error(`Unexpected server error: ${errorText}`);
+            case 503:
+                throw new Error(`Service temporarily unavailable (throughput limit or MV issue): ${errorText}`);
+            default:
+                throw new Error(`Tinybird error: ${response.statusText} - ${errorText}`);
+        }
     }
-
+    
+    // Success responses:
+    // 200: Write acknowledged (wait=true)
+    // 202: Data accepted, will be written eventually (wait=false)
+    if (response.status === 202) {
+        return { status: 'accepted', message: 'Event queued for processing' };
+    }
+    
     return response.json();
 };
 
 /**
  * Rate limiting check (simple in-memory, use Redis for production)
+ * Note: Tinybird Events API has a default limit of 100 req/s (6000/min)
+ * Our local limit is more conservative to prevent abuse
  */
 const rateLimitMap = new Map();
 const isRateLimited = (ip) => {
     const now = Date.now();
     const windowMs = 60 * 1000; // 1 minute window
-    const maxRequests = 1000; // Max 1000 requests per minute per IP
+    const maxRequests = 1000; // Max 1000 requests per minute per IP (well below Tinybird's 6000/min limit)
     
     if (!rateLimitMap.has(ip)) {
         rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });

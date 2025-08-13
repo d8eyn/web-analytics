@@ -2,9 +2,9 @@
 
 /* eslint-disable @next/next/no-img-element */
 import Script from 'next/script'
-import Header from '../components/Header'
+import { Suspense } from 'react'
+import dynamic from 'next/dynamic'
 import Footer from '../components/Footer'
-import OptimizedWidgets from '../components/OptimizedWidgets'
 import EnhancedFunnelBanner from '../components/EnhancedFunnelBanner'
 import FunnelAnalysisDemo from '../components/FunnelAnalysisDemo'
 import { PagesSection } from '../components/PagesSection'
@@ -25,7 +25,18 @@ import { useState } from 'react'
 import { KpiType } from '../lib/types/kpis'
 import useKpiTotals from '../lib/hooks/use-kpi-totals'
 
-export default function DashboardPage() {
+// Dynamic imports for components that use useSearchParams
+const Header = dynamic(() => import('../components/Header'), { 
+  ssr: false,
+  loading: () => <div className="h-20" />
+})
+
+const OptimizedWidgets = dynamic(() => import('../components/OptimizedWidgets'), { 
+  ssr: false,
+  loading: () => <div className="text-center py-10">Loading dashboard...</div>
+})
+
+function DashboardPage() {
   const { isAuthenticated, isTokenValid } = useAuth()
   const [showEnhancedDemo, setShowEnhancedDemo] = useState(false)
   const [selectedKpi, setSelectedKpi] = useState<KpiType>('visits')
@@ -59,7 +70,9 @@ export default function DashboardPage() {
       </div>
       <div className="min-h-screen px-5 py-5 text-sm leading-5 bg-body sm:px-10 text-secondary">
         <div className="mx-auto max-w-7xl">
-          <Header />
+          <Suspense fallback={<div className="h-20" />}>
+            <Header />
+          </Suspense>
           {!isAuthenticated && <Credentials />}
           {isAuthenticated && !isTokenValid && (
             <div className="flex items-center justify-center p-4 mb-4 text-blue-700 bg-blue-100 rounded-md">
@@ -116,7 +129,9 @@ export default function DashboardPage() {
                     onChange={setSelectedKpi}
                     totals={kpiTotals}
                   />
-                  <OptimizedWidgets selectedKpi={selectedKpi} />
+                  <Suspense fallback={<div className="text-center py-10">Loading dashboard...</div>}>
+                    <OptimizedWidgets selectedKpi={selectedKpi} />
+                  </Suspense>
                   <div className="grid grid-cols-2 gap-4">
                     <PagesSection />
                     {/* <FunnelSection /> */}
@@ -138,5 +153,25 @@ export default function DashboardPage() {
         </div>
       </div>
     </>
+  )
+}
+
+// Export wrapper component to handle useSearchParams in Suspense boundary
+export default function Page() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen px-5 py-5 text-sm leading-5 bg-body sm:px-10 text-secondary">
+        <div className="mx-auto max-w-7xl">
+          <div className="text-center py-20">
+            <div className="inline-block animate-pulse">
+              <div className="h-8 w-48 bg-gray-200 rounded mb-4"></div>
+              <div className="h-4 w-32 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <DashboardPage />
+    </Suspense>
   )
 }

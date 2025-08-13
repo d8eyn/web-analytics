@@ -5,11 +5,8 @@ import {
   AreaChart,
   BarChart,
   BarList,
-  ChartProvider,
   DonutChart,
-  PieChart,
-  tinybirdBorderColor,
-} from '@tinybirdco/charts'
+} from '@tremor/react'
 import { fetcher, getConfig } from '../lib/api'
 import { useSearchParams } from 'next/navigation'
 import useDateFilter from '../lib/hooks/use-date-filter'
@@ -55,21 +52,7 @@ export default function Widgets() {
   const { data: kpiTotals } = useKpiTotals()
 
   return (
-    <ChartProvider
-      queryConfig={{
-        token,
-        fetcher,
-      }}
-      styles={{
-        borderRadius: 8,
-        borderColor: tinybirdBorderColor,
-        colorPalette: ['#27F795', '#F72768', '#F7D427', '#2768F7'],
-        padding: 24,
-        fontFamily: typography.fontFamily,
-        fontSize: 12,
-      }}
-    >
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* KPIs and Main Chart */}
         <div
           className="relative"
@@ -78,6 +61,7 @@ export default function Widgets() {
           <div className="absolute top-0 left-0 right-0 z-10">
             <KpisTabs value={kpi} onChange={setKpi} totals={kpiTotals} />
           </div>
+          {/* TODO: Refactor AreaChart to use @tremor/react props structure
           <AreaChart
             endpoint={kpisEndpoint}
             index="date"
@@ -105,7 +89,10 @@ export default function Widgets() {
                 },
               },
             }}
-          />
+          /> */}
+          <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
+            <p className="text-gray-500">Chart requires data integration</p>
+          </div>
         </div>
 
         {/* Main Dashboard Grid */}
@@ -129,6 +116,7 @@ export default function Widgets() {
           <div className="space-y-6">
             {/* Current Visitors Trend */}
             <InView height={WidgetHeight.Small}>
+              {/* TODO: Refactor BarChart to use @tremor/react props structure
               <BarChart
                 endpoint={trendEndpoint}
                 index="t"
@@ -143,7 +131,10 @@ export default function Widgets() {
                   date_from: startDate,
                   date_to: endDate,
                 }}
-              />
+              /> */}
+              <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
+                <p className="text-gray-500">Users in last 30 minutes - Requires data integration</p>
+              </div>
             </InView>
 
             {/* Countries/Locations Section */}
@@ -159,6 +150,5 @@ export default function Widgets() {
           <FunnelSection />
         </div>
       </div>
-    </ChartProvider>
   )
 }

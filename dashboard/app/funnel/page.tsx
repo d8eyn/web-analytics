@@ -546,7 +546,7 @@ export default function FunnelPage() {
             <ul className="list-disc list-inside mt-2 space-y-1 text-gray-600">
               <li><code>^/pricing</code> - Starts with /pricing</li>
               <li><code>/checkout$</code> - Ends with /checkout</li>
-              <li><code>product</code> - Contains "product"</li>
+              <li><code>product</code> - Contains &quot;product&quot;</li>
               <li><code>^/blog/[0-9]+$</code> - Blog post with numeric ID</li>
             </ul>
           </div>
