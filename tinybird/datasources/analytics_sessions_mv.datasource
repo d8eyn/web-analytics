@@ -37,8 +37,4 @@ SCHEMA >
 ENGINE AggregatingMergeTree
 ENGINE_PARTITION_KEY toYYYYMM(date)
 ENGINE_SORTING_KEY date, site_id, session_id
-
-FORWARD_QUERY >
-    SELECT date, site_id, session_id, client_id, visitor_id, hostname, device, browser, os, country_code, region, city, channel, language, defaultValueOfTypeName('SimpleAggregateFunction(any,String)') AS referrer, defaultValueOfTypeName('SimpleAggregateFunction(any,String)') AS referrer_name, utm_source, utm_medium, utm_campaign, defaultValueOfTypeName('SimpleAggregateFunction(any,String)') AS utm_content, defaultValueOfTypeName('SimpleAggregateFunction(any,String)') AS utm_term, entry_page, exit_page, entry_title, exit_title, start, first_hit, latest_hit, total_duration, page_views, is_bounce
-
-
+ENGINE_TTL date + toIntervalDay(60)

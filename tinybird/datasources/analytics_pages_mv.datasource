@@ -31,6 +31,4 @@ SCHEMA >
 ENGINE AggregatingMergeTree
 ENGINE_PARTITION_KEY toYYYYMM(date)
 ENGINE_SORTING_KEY date, site_id, hostname, pathname, device, browser, country_code
-
-FORWARD_QUERY >
-    SELECT date, site_id, hostname, pathname, title, device, browser, os, country_code, region, city, channel, defaultValueOfTypeName('String') AS referrer, defaultValueOfTypeName('String') AS referrer_name, utm_source, utm_medium, utm_campaign, utm_content, utm_term, language, screen_class, visits, hits, total_duration, bounces
+ENGINE_TTL date + toIntervalDay(60)

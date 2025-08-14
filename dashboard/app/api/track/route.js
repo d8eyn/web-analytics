@@ -117,8 +117,10 @@ const enrichTrackingData = (data, req) => {
             event_name: String(data.event_name || ''),
             event_meta_keys: Array.isArray(data.event_meta_keys) ? data.event_meta_keys : [],
             event_meta_values: Array.isArray(data.event_meta_values) ? data.event_meta_values : [],
+            event_meta_types: Array.isArray(data.event_meta_types) ? data.event_meta_types : (Array.isArray(data.event_meta_values) ? data.event_meta_values.map(() => 'string') : []),
             tag_keys: Array.isArray(data.tag_keys) ? data.tag_keys : [],
             tag_values: Array.isArray(data.tag_values) ? data.tag_values : [],
+            tag_types: Array.isArray(data.tag_types) ? data.tag_types : (Array.isArray(data.tag_values) ? data.tag_values.map(() => 'string') : []),
             
             // Technical fields
             user_agent: String(data.user_agent || ''),

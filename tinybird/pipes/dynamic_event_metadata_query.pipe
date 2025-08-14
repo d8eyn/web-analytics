@@ -1,0 +1,177 @@
+DESCRIPTION >
+    Dynamic query for custom event metadata with automatic type conversion
+    Demonstrates how to handle user-defined types dynamically
+    
+TOKEN "dashboard" READ
+
+NODE parse_metadata
+DESCRIPTION >
+    Parse event metadata with dynamic type conversion based on type hints
+    
+SQL >
+    %
+    SELECT
+        timestamp,
+        event_name,
+        site_id,
+        visitor_id,
+        session_id,
+        -- Create dynamic key-value pairs with proper type conversion
+        arrayZip(event_meta_keys, event_meta_values, coalesce(event_meta_types, arrayMap(x -> 'string', event_meta_values))) as metadata_tuples,
+        -- Original arrays for reference
+        event_meta_keys,
+        event_meta_values,
+        coalesce(event_meta_types, arrayMap(x -> 'string', event_meta_values)) as event_meta_types
+    FROM analytics_events_api
+    WHERE 
+        action = 'custom_event'
+        AND event_name != ''
+        {% if defined(site_id) %} AND site_id = {{ String(site_id, description="Site ID for filtering", required=False) }}{% end %}
+        {% if defined(event_name) %} AND event_name = {{ String(event_name, description="Event name to filter", required=False) }}{% end %}
+        {% if defined(date_from) %}
+            AND toDate(timestamp) >= {{ Date(date_from, description="Starting date", required=False) }}
+        {% else %} 
+            AND toDate(timestamp) >= timestampAdd(today(), interval -7 day)
+        {% end %}
+        {% if defined(date_to) %}
+            AND toDate(timestamp) <= {{ Date(date_to, description="Ending date", required=False) }}
+        {% end %}
+
+NODE convert_types
+DESCRIPTION >
+    Dynamically convert values based on type hints
+    
+SQL >
+    SELECT
+        timestamp,
+        event_name,
+        site_id,
+        visitor_id,
+        session_id,
+        -- Extract specific metadata with type conversion
+        arrayMap(tuple -> tuple.1, metadata_tuples) as keys,
+        arrayMap(tuple -> tuple.2, metadata_tuples) as string_values,
+        arrayMap(tuple -> tuple.3, metadata_tuples) as types,
+        -- Convert to proper types based on hints
+        arrayMap((value, type) -> 
+            CASE type
+                WHEN 'integer' THEN toString(toInt64OrNull(value))
+                WHEN 'float' THEN toString(toFloat64OrNull(value))
+                WHEN 'boolean' THEN toString(value = 'true')
+                WHEN 'array' THEN value  -- Keep as JSON string
+                WHEN 'object' THEN value  -- Keep as JSON string
+                WHEN 'null' THEN 'null'
+                ELSE value
+            END,
+            event_meta_values,
+            coalesce(event_meta_types, arrayMap(x -> 'string', event_meta_values))
+        ) as converted_values
+    FROM parse_metadata
+
+NODE aggregated_metrics
+DESCRIPTION >
+    Aggregate metrics with simplified type handling
+    
+SQL >
+    %
+    SELECT
+        metadata_key,
+        data_type,
+        count() as occurrence_count,
+        uniq(visitor_id) as unique_visitors,
+        -- Calculate numeric stats only for numeric types
+        if(data_type = 'integer', avg(toInt64OrNull(metadata_value)), NULL) as avg_numeric,
+        if(data_type = 'float', avg(toFloat64OrNull(metadata_value)), NULL) as avg_float,
+        if(data_type = 'boolean', countIf(metadata_value = 'true') / count(), NULL) as true_rate,
+        -- Min/Max for numeric types
+        if(data_type = 'integer', min(toInt64OrNull(metadata_value)), NULL) as min_numeric,
+        if(data_type = 'float', min(toFloat64OrNull(metadata_value)), NULL) as min_float,
+        if(data_type = 'integer', max(toInt64OrNull(metadata_value)), NULL) as max_numeric,
+        if(data_type = 'float', max(toFloat64OrNull(metadata_value)), NULL) as max_float,
+        -- Sample values
+        arraySlice(groupArray(metadata_value), 1, 5) as sample_values
+    FROM (
+        SELECT
+            visitor_id,
+            tupleElement(kv_pair, 1) as metadata_key,
+            tupleElement(kv_pair, 2) as metadata_value,
+            tupleElement(kv_pair, 3) as data_type
+        FROM (
+            SELECT
+                visitor_id,
+                arrayJoin(
+                    arrayZip(
+                        event_meta_keys,
+                        event_meta_values,
+                        coalesce(event_meta_types, arrayMap(x -> 'string', event_meta_values))
+                    )
+                ) as kv_pair
+            FROM analytics_events_api
+            WHERE 
+                action = 'custom_event'
+                AND event_name != ''
+                {% if defined(site_id) %} AND site_id = {{ String(site_id) }}{% end %}
+                {% if defined(event_name) %} AND event_name = {{ String(event_name) }}{% end %}
+                {% if defined(date_from) %}
+                    AND toDate(timestamp) >= {{ Date(date_from) }}
+                {% else %} 
+                    AND toDate(timestamp) >= timestampAdd(today(), interval -7 day)
+                {% end %}
+                {% if defined(date_to) %}
+                    AND toDate(timestamp) <= {{ Date(date_to) }}
+                {% end %}
+        )
+    )
+    GROUP BY metadata_key, data_type
+    ORDER BY occurrence_count DESC
+
+NODE query_specific_values
+DESCRIPTION >
+    Query specific metadata values with proper type handling
+    
+SQL >
+    %
+    SELECT
+        timestamp,
+        event_name,
+        site_id,
+        visitor_id,
+        session_id,
+        -- Extract specific metadata field with type conversion
+        {% if defined(metadata_key) %}
+            event_meta_keys[indexOf(event_meta_keys, {{ String(metadata_key, description="Metadata key to extract", required=False) }})] as key_name,
+            event_meta_values[indexOf(event_meta_keys, {{ String(metadata_key) }})] as raw_value,
+            coalesce(event_meta_types, arrayMap(x -> 'string', event_meta_values))[indexOf(event_meta_keys, {{ String(metadata_key) }})] as value_type,
+            -- Convert based on type hint
+            CASE coalesce(event_meta_types, arrayMap(x -> 'string', event_meta_values))[indexOf(event_meta_keys, {{ String(metadata_key) }})]
+                WHEN 'integer' THEN toString(toInt64OrNull(event_meta_values[indexOf(event_meta_keys, {{ String(metadata_key) }})]))
+                WHEN 'float' THEN toString(toFloat64OrNull(event_meta_values[indexOf(event_meta_keys, {{ String(metadata_key) }})]))
+                WHEN 'boolean' THEN toString(event_meta_values[indexOf(event_meta_keys, {{ String(metadata_key) }})] = 'true')
+                WHEN 'array' THEN event_meta_values[indexOf(event_meta_keys, {{ String(metadata_key) }})]
+                WHEN 'object' THEN event_meta_values[indexOf(event_meta_keys, {{ String(metadata_key) }})]
+                ELSE event_meta_values[indexOf(event_meta_keys, {{ String(metadata_key) }})]
+            END as converted_value
+        {% else %}
+            event_meta_keys,
+            event_meta_values,
+            coalesce(event_meta_types, arrayMap(x -> 'string', event_meta_values)) as event_meta_types
+        {% end %}
+    FROM analytics_events_api
+    WHERE 
+        action = 'custom_event'
+        AND event_name != ''
+        {% if defined(site_id) %} AND site_id = {{ String(site_id) }}{% end %}
+        {% if defined(event_name) %} AND event_name = {{ String(event_name) }}{% end %}
+        {% if defined(metadata_key) %} AND has(event_meta_keys, {{ String(metadata_key) }}){% end %}
+        {% if defined(date_from) %}
+            AND toDate(timestamp) >= {{ Date(date_from) }}
+        {% else %} 
+            AND toDate(timestamp) >= timestampAdd(today(), interval -7 day)
+        {% end %}
+        {% if defined(date_to) %}
+            AND toDate(timestamp) <= {{ Date(date_to) }}
+        {% end %}
+    ORDER BY timestamp DESC
+    LIMIT {{ Int32(limit, 100) }}
+
+TYPE endpoint

@@ -2,6 +2,9 @@ DESCRIPTION >
     Detailed page views data source - individual page view records with full enrichment
     This provides granular drill-down capabilities alongside the optimized materialized views
 
+FORWARD_QUERY > 
+    SELECT timestamp, action, version, session_id, client_id, visitor_id, site_id, hostname, path, title, language, country_code, region, city, referrer, referrer_name, referrer_icon, utm_source, utm_medium, utm_campaign, utm_content, utm_term, duration_seconds, event_name, event_meta_keys, event_meta_values, CAST([] AS Array(String)) AS event_meta_types, tag_keys, tag_values, CAST([] AS Array(String)) AS tag_types, ip, bot, bot_reason, href, current_domain, device, browser, os, channel
+
 SCHEMA >
     `timestamp` DateTime,
     `action` String,
@@ -29,8 +32,10 @@ SCHEMA >
     `event_name` String,
     `event_meta_keys` Array(String),
     `event_meta_values` Array(String),
+    `event_meta_types` Array(String),
     `tag_keys` Array(String),
     `tag_values` Array(String),
+    `tag_types` Array(String),
     `ip` String,
     `bot` Int8,
     `bot_reason` String,
@@ -44,5 +49,5 @@ SCHEMA >
 ENGINE MergeTree
 ENGINE_PARTITION_KEY toYYYYMM(timestamp)
 ENGINE_SORTING_KEY timestamp, client_id, visitor_id, session_id
-ENGINE_TTL timestamp + toIntervalDay(90)
+ENGINE_TTL timestamp + toIntervalDay(60)
 ENGINE_SAMPLING_KEY visitor_id 

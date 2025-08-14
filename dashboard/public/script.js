@@ -438,36 +438,98 @@
     setTimeout(() => {
       _sendEvent('page_hit', {
         href: window.location.href
+      }, {
+        // Page hits don't have event metadata, but we need to send empty arrays for compatibility
+        event_meta_keys: [],
+        event_meta_values: [],
+        event_meta_types: [],
+        tag_keys: [],
+        tag_values: [],
+        tag_types: []
       })
     }, 300)
   }
 
   /**
    * Track custom events with metadata
+   * Handles multi-type values by converting them to strings while preserving structure
+   * Includes type hints for dynamic querying
    */
   function _trackCustomEvent(eventName, eventData = {}) {
     const metaKeys = Object.keys(eventData)
-    const metaValues = Object.values(eventData)
+    const metaValues = []
+    const metaTypes = []
+    
+    Object.values(eventData).forEach(value => {
+      // Detect type and convert to string while preserving type information
+      if (value === null || value === undefined) {
+        metaValues.push('')
+        metaTypes.push('null')
+      } else if (Array.isArray(value)) {
+        metaValues.push(JSON.stringify(value))
+        metaTypes.push('array')
+      } else if (typeof value === 'object') {
+        metaValues.push(JSON.stringify(value))
+        metaTypes.push('object')
+      } else if (typeof value === 'number') {
+        metaValues.push(String(value))
+        metaTypes.push(Number.isInteger(value) ? 'integer' : 'float')
+      } else if (typeof value === 'boolean') {
+        metaValues.push(String(value))
+        metaTypes.push('boolean')
+      } else {
+        metaValues.push(String(value))
+        metaTypes.push('string')
+      }
+    })
     
     _sendEvent('custom_event', eventData, {
       event_name: eventName,
       event_meta_keys: metaKeys,
-      event_meta_values: metaValues
+      event_meta_values: metaValues,
+      event_meta_types: metaTypes  // New field for type hints
     })
   }
 
   /**
    * Track page tagging
+   * Handles multi-type values by converting them to strings while preserving structure
+   * Includes type hints for dynamic querying
    */
   function _trackPageTags(tags = {}) {
     const tagKeys = Object.keys(tags)
-    const tagValues = Object.values(tags)
+    const tagValues = []
+    const tagTypes = []
+    
+    Object.values(tags).forEach(value => {
+      // Detect type and convert to string while preserving type information
+      if (value === null || value === undefined) {
+        tagValues.push('')
+        tagTypes.push('null')
+      } else if (Array.isArray(value)) {
+        tagValues.push(JSON.stringify(value))
+        tagTypes.push('array')
+      } else if (typeof value === 'object') {
+        tagValues.push(JSON.stringify(value))
+        tagTypes.push('object')
+      } else if (typeof value === 'number') {
+        tagValues.push(String(value))
+        tagTypes.push(Number.isInteger(value) ? 'integer' : 'float')
+      } else if (typeof value === 'boolean') {
+        tagValues.push(String(value))
+        tagTypes.push('boolean')
+      } else {
+        tagValues.push(String(value))
+        tagTypes.push('string')
+      }
+    })
     
     _sendEvent('page_hit', {
       href: window.location.href
     }, {
       tag_keys: tagKeys,
-      tag_values: tagValues
+      tag_values: tagValues,
+      tag_types: tagTypes  // New field for type hints
     })
   }
 
