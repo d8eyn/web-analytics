@@ -445,9 +445,9 @@
   /**
    * Track custom events with metadata
    */
-  function _trackCustomEvent(eventName, eventData = {}, metadata = {}) {
-    const metaKeys = Object.keys(metadata)
-    const metaValues = Object.values(metadata)
+  function _trackCustomEvent(eventName, eventData = {}) {
+    const metaKeys = Object.keys(eventData)
+    const metaValues = Object.values(eventData)
     
     _sendEvent('custom_event', eventData, {
       event_name: eventName,
